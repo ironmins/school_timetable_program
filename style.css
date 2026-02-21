@@ -13,7 +13,6 @@ body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; background-color: 
 .badge { font-size: 12px; background: #e5e7eb; color: #4b5563; padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 500; }
 .badge.required { background: #fee2e2; color: #ef4444; }
 
-/* 업로드 박스 레이아웃 */
 .upload-box { text-align: center; border: 2px dashed #cbd5e1; cursor: pointer; padding: 40px 20px; }
 .upload-box:hover { border-color: #6366f1; background-color: #eef2ff; }
 .upload-icon { font-size: 40px; margin-bottom: 10px; }
@@ -21,14 +20,12 @@ body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; background-color: 
 .upload-box p { color: #64748b; font-size: 14px; margin: 0; }
 .upload-status { margin-top: 15px; font-weight: 600; color: #4f46e5; }
 
-/* 선택 옵션 그리드 */
 .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
 .small-box { padding: 20px 15px; margin-bottom: 0; }
 .upload-icon-small { font-size: 24px; margin-bottom: 8px; }
 .small-box h4 { margin: 0 0 5px 0; font-size: 15px; display: flex; align-items: center; justify-content: center; }
 .upload-status-small { margin-top: 10px; font-size: 13px; font-weight: 600; color: #059669; }
 
-/* 드래그 시각 효과 */
 .upload-box.dragover { border-color: #4f46e5; background-color: #e0e7ff; transform: scale(1.02); }
 #logo-drop-zone { transition: all 0.2s ease; cursor: pointer; }
 #logo-drop-zone.dragover { background-color: #eef2ff; border-radius: 12px; box-shadow: inset 0 0 0 2px #6366f1; }
@@ -61,5 +58,17 @@ body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; background-color: 
 .generate-btn { width: 100%; padding: 20px; background-color: #4f46e5; color: white; border: none; border-radius: 14px; font-size: 18px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
 .generate-btn:hover:not(:disabled) { background-color: #4338ca; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4); }
 .generate-btn:disabled { background-color: #cbd5e1; color: #f8fafc; cursor: not-allowed; box-shadow: none; transform: none; }
+
+/* 🔥 하단 크레딧 스타일 */
+.footer-credit {
+    text-align: center;
+    margin-top: 35px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.footer-credit p { margin: 0; }
 
 @media (max-width: 600px) { .upload-grid { grid-template-columns: 1fr; } }

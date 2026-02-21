@@ -30,7 +30,7 @@ function setupDragAndDrop(dropZoneId, fileInputId, fileCallback) {
 }
 
 // ==========================================
-// 2. 파일 파싱 로직 (시간표, 내선, 시정표, 로고)
+// 2. 파일 파싱 로직 
 // ==========================================
 function processExcelFile(file) {
     if (!file) return;
@@ -194,6 +194,15 @@ document.getElementById('generate-btn').addEventListener('click', function() {
     const themeCSS = getThemeCSS(selectedTheme);
     const logoHtml = uploadedLogoBase64 ? `<img src="${uploadedLogoBase64}" class="title-icon" alt="학교 로고">` : `📅`;
 
+    // 🔥 현재 생성 시점의 날짜/시간 포맷 계산
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    const generateTimeStr = `${year}-${month}-${day} ${hours}:${mins} (KST)`;
+
     const htmlTemplate = `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -278,6 +287,10 @@ document.getElementById('generate-btn').addEventListener('click', function() {
         .no-result { color: var(--subtle-text); font-size: 14px; text-align: center; padding: 20px; background: var(--empty-bg); border-radius: 8px; }
         .error-notice { background: #FFF5F5; border-left: 4px solid #FC8181; padding: 15px; margin-bottom: 20px; color: #C53030; font-size: 14px; border-radius: 4px; line-height: 1.5; }
 
+        /* 🔥 결과물 HTML에도 크레딧 CSS 추가 */
+        .footer-credit { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--subtle-text); font-size: 13px; line-height: 1.6; }
+        .footer-credit p { margin: 0; }
+
         @media (max-width: 768px) {
             #app-container { padding: 20px; margin-top: 10px; }
             .clock-container { font-size: 13px; margin: 15px auto 25px auto; padding: 6px 16px; }
@@ -287,7 +300,7 @@ document.getElementById('generate-btn').addEventListener('click', function() {
         @media print {
             body { background: white; }
             #app-container { box-shadow: none; padding: 0; }
-            #search-section, .teacher-actions, h1, .clock-container { display: none; }
+            #search-section, .teacher-actions, h1, .clock-container, .footer-credit { display: none; }
             table { font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .today-cell { border: none !important; }
             .today-header { background-color: var(--card-background) !important; color: var(--text-color) !important; }
@@ -322,6 +335,11 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                 <h3 style="color: var(--text-color);">시간표를 확인하고 싶은 교사를 검색해보세요</h3>
             </div>
         </div>
+
+        <div class="footer-credit">
+            <p>Last updated: ${generateTimeStr}</p>
+            <p>Made by IRONMIN (Jeonju high school)</p>
+        </div>
     </div>
 
     <div id="swap-modal" class="modal-overlay" onclick="if(event.target === this) closeSwapModal()">
@@ -330,8 +348,7 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                 <h3 id="modal-title">🔄 수업 교체 및 보강 찾기</h3>
                 <button class="close-btn" onclick="closeSwapModal()">&times;</button>
             </div>
-            <div class="modal-body" id="modal-body-content">
-                </div>
+            <div class="modal-body" id="modal-body-content"></div>
         </div>
     </div>
     
@@ -378,7 +395,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             return false;
         }
 
-        // 🔥 직접 클릭 이벤트를 통해 모달을 여는 핵심 로직
         function openSwapModal(targetTeacherName, targetDay, targetPeriodIndex, cellData) {
             const modal = document.getElementById('swap-modal');
             const bodyContent = document.getElementById('modal-body-content');
@@ -484,7 +500,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
 
         function closeSwapModal() { document.getElementById('swap-modal').style.display = 'none'; }
 
-
         function processSubject(subject) {
             if (!subject) return { html: '', style: '' };
             const subjectStr = subject.toString();
@@ -537,7 +552,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             return { html: finalHtml, style: cellBorderStyle };
         }
 
-        // 🔥 이벤트 위임을 통한 안전한 클릭 감지
         function init() {
             updateSearchStats(); updateFavoriteChips();
             teacherSearchInput.addEventListener('input', handleSearch);
@@ -546,7 +560,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             document.addEventListener('click', e => { 
                 if (!e.target.closest('.search-container')) hideDropdown(); 
                 
-                // 클릭한 요소가 수업 셀(clickable-cell)인지 확인
                 const cell = e.target.closest('.clickable-cell');
                 if (cell) {
                     const tName = cell.getAttribute('data-teacher');
@@ -624,7 +637,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                     
                     if (cellData && cellData !== '') {
                         const sub = processSubject(cellData);
-                        // 🔥 안전한 데이터 속성(Data Attribute) 방식으로 변경
                         tableHTML += \`<td class="\${cellClass} clickable-cell" style="\${sub.style}" data-teacher="\${teacherName}" data-day="\${day}" data-period="\${i}">\${sub.html}</td>\`;
                     } else {
                         tableHTML += \`<td class="empty-period \${cellClass}"></td>\`; 
