@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교사용 시간표 조회 HTML 생성기</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-wrapper">
+        <header class="header">
+            <h1>🚀 교사용 시간표 조회 HTML 생성기</h1>
+            <p>엑셀 파일을 업로드하고 옵션을 선택하여 나만의 시간표 웹페이지를 만들어보세요.</p>
+        </header>
+        
+        <div class="section-box upload-box" id="excel-drop-zone">
+            <div class="upload-icon">📅</div>
+            <h3>주간시간표 파일 업로드 <span class="badge required">필수</span></h3>
+            <p>전체 교사 시간표 엑셀(CSV) 파일을 드래그하여 놓으세요.</p>
+            <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" style="display: none;">
+            <div id="upload-status" class="upload-status"></div>
+        </div>
+
+        <div class="upload-grid">
+            <div class="section-box upload-box small-box" id="ext-drop-zone">
+                <div class="upload-icon-small">📞</div>
+                <h4>내선번호 파일 <span class="badge">선택</span></h4>
+                <p>이름, 번호 2열 엑셀</p>
+                <input type="file" id="ext-file" accept=".xlsx, .xls, .csv" style="display: none;">
+                <div id="ext-status" class="upload-status-small"></div>
+            </div>
+            
+            <div class="section-box upload-box small-box" id="bell-drop-zone">
+                <div class="upload-icon-small">⏰</div>
+                <h4>일과 시정표 <span class="badge">선택</span></h4>
+                <p>교시, 시간 2열 엑셀</p>
+                <input type="file" id="bell-file" accept=".xlsx, .xls, .csv" style="display: none;">
+                <div id="bell-status" class="upload-status-small"></div>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h3 class="box-title">📋 표시 옵션 설정</h3>
+            <div class="checkbox-group">
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="opt-color1" checked>
+                    <span class="checkmark"></span>
+                    선택반(예: A_수업)을 색상과 기호로 구분하기
+                </label>
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="opt-color2" checked>
+                    <span class="checkmark"></span>
+                    선택과목을 색상과 기호로 구분하기
+                </label>
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="opt-linebreak" checked>
+                    <span class="checkmark"></span>
+                    수업장소와 수업명을 줄바꿈으로 표시하기
+                </label>
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="opt-chip" checked>
+                    <span class="checkmark"></span>
+                    수업장소를 칩 형태로 표시하기 (학년별 톤 통일)
+                </label>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h3 class="box-title">🎨 색상 테마 선택</h3>
+            <select id="theme-select" class="custom-select">
+                <option value="blue">기본 (블루)</option>
+                <option value="dark">다크 (검정/회색)</option>
+                <option value="green">그린 (자연)</option>
+                <option value="purple">퍼플 (보라)</option>
+                <option value="orange">오렌지 (따뜻함)</option>
+                <option value="teal">틸 (바다)</option>
+            </select>
+            <div id="theme-preview" class="theme-preview"></div>
+        </div>
+
+        <div class="section-box">
+            <h3 class="box-title">📝 페이지 제목 설정</h3>
+            <input type="text" id="page-title" class="custom-input" value="2025학년도 2학기 개인별 시간표" placeholder="생성될 페이지 제목을 입력하세요">
+        </div>
+
+        <div class="section-box">
+            <h3 class="box-title">🏫 학교 로고 업로드 <span class="badge">선택</span></h3>
+            <div class="logo-upload-container" id="logo-drop-zone">
+                <div class="logo-preview-wrapper">
+                    <img id="logo-preview" src="" alt="로고 미리보기" style="display: none;">
+                    <div id="logo-placeholder" class="logo-placeholder">로고 없음</div>
+                </div>
+                <div class="logo-instructions">
+                    <label for="logo-file" class="upload-btn">이미지 선택</label>
+                    <p>이미지를 드래그하여 놓으세요 (PNG, JPG)</p>
+                    <input type="file" id="logo-file" accept="image/*" style="display: none;">
+                </div>
+            </div>
+        </div>
+
+        <button id="generate-btn" class="generate-btn" disabled>파일을 업로드하면 버튼이 활성화됩니다</button>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
