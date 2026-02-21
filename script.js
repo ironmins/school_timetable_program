@@ -30,7 +30,7 @@ function setupDragAndDrop(dropZoneId, fileInputId, fileCallback) {
 }
 
 // ==========================================
-// 2. 파일 파싱 로직 
+// 2. 파일 파싱 로직
 // ==========================================
 function processExcelFile(file) {
     if (!file) return;
@@ -194,7 +194,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
     const themeCSS = getThemeCSS(selectedTheme);
     const logoHtml = uploadedLogoBase64 ? `<img src="${uploadedLogoBase64}" class="title-icon" alt="학교 로고">` : `📅`;
 
-    // 🔥 현재 생성 시점의 날짜/시간 포맷 계산
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -287,7 +286,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
         .no-result { color: var(--subtle-text); font-size: 14px; text-align: center; padding: 20px; background: var(--empty-bg); border-radius: 8px; }
         .error-notice { background: #FFF5F5; border-left: 4px solid #FC8181; padding: 15px; margin-bottom: 20px; color: #C53030; font-size: 14px; border-radius: 4px; line-height: 1.5; }
 
-        /* 🔥 결과물 HTML에도 크레딧 CSS 추가 */
         .footer-credit { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--subtle-text); font-size: 13px; line-height: 1.6; }
         .footer-credit p { margin: 0; }
 
@@ -388,6 +386,35 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             return 'hsl(' + (hash % 360) + ', ' + s + '%, ' + l + '%)';
         }
 
+        // 🔥 새롭게 탑재된 인공지능급 텍스트 분석기 (장소와 알파벳을 완벽히 구분)
+        function parseCellData(rawCellData) {
+            if (!rawCellData) return { location: '', subjectName: '', hasAlphabet: false };
+            let str = rawCellData.toString().replace(/_x000D_/g, '').trim();
+            let loc = '';
+            let subj = str;
+            
+            // 띄어쓰기나 줄바꿈을 기준으로 첫 번째 단어와 나머지로 분리
+            const m = str.match(/^(\\S+)\\s+([\\s\\S]+)$/);
+            let isLoc = false;
+            
+            if (m) {
+                isLoc = true;
+                const firstWord = m[1];
+                // 첫 단어가 단순 알파벳 1개거나(C), 알파벳_(C_)거나, 알파벳+한글(C고전)이면 장소가 아님!
+                if (/^[A-Z]$/.test(firstWord)) isLoc = false;
+                if (/^[A-Z]_/.test(firstWord)) isLoc = false;
+                if (/^[A-Z][가-힣a-zA-Z]+/.test(firstWord)) isLoc = false;
+            }
+            
+            if (m && isLoc) {
+                loc = m[1].trim();
+                subj = m[2].trim();
+            }
+            
+            const hasAlpha = /[a-zA-Z]/.test(subj);
+            return { location: loc, subjectName: subj, hasAlphabet: hasAlpha };
+        }
+
         function isFree(teacherData, day, periodIndex) {
             const cell = teacherData.schedule[day][periodIndex];
             if (!cell || cell === null || cell.trim() === '') return true;
@@ -395,23 +422,21 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             return false;
         }
 
-        function openSwapModal(targetTeacherName, targetDay, targetPeriodIndex, cellData) {
+        function openSwapModal(targetTeacherName, targetDay, targetPeriodIndex) {
             const modal = document.getElementById('swap-modal');
             const bodyContent = document.getElementById('modal-body-content');
             const targetPeriodNum = targetPeriodIndex + 1;
             
-            document.getElementById('modal-title').innerHTML = \`🔄 <b>\${targetDay}요일 \${targetPeriodNum}교시</b> (\${cellData.replace(/\\r?\\n/g, ' ')}) 교체/보강 탐색\`;
-            
-            const match = cellData.match(/^(\\S+)\\s+(.+)$/);
-            let targetClass = '';
-            let targetSubject = cellData;
-            if (match) {
-                targetClass = match[1]; 
-                targetSubject = match[2];
-            }
-            
-            const hasAlphabet = /[a-zA-Z]/.test(cellData);
             const targetTeacherData = allSchedules.find(t => t.name === targetTeacherName);
+            if (!targetTeacherData) return;
+            
+            let rawCellData = targetTeacherData.schedule[targetDay][targetPeriodIndex] || "";
+            document.getElementById('modal-title').innerHTML = \`🔄 <b>\${targetDay}요일 \${targetPeriodNum}교시</b> (\${rawCellData.replace(/_x000D_/g, '').replace(/\\r?\\n/g, ' ')}) 교체/보강 탐색\`;
+            
+            const targetParsed = parseCellData(rawCellData);
+            const targetClass = targetParsed.location;
+            const hasAlphabet = targetParsed.hasAlphabet;
+            
             let swapResults = [];
             let subResults = [];
             const days = ['월', '화', '수', '목', '금'];
@@ -428,23 +453,21 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                         for (let p = 0; p < 7; p++) {
                             if (otherDay === targetDay && p === targetPeriodIndex) continue;
 
-                            const otherCell = otherTeacher.schedule[otherDay][p];
+                            let otherCell = otherTeacher.schedule[otherDay][p];
                             if (!otherCell || isFree(otherTeacher, otherDay, p)) continue;
-
-                            const otherMatch = otherCell.match(/^(\\S+)\\s+(.+)$/);
-                            if (otherMatch) {
-                                const otherClass = otherMatch[1];
-                                const otherHasAlphabet = /[a-zA-Z]/.test(otherCell);
+                            
+                            const otherParsed = parseCellData(otherCell);
+                            const otherClass = otherParsed.location;
+                            const otherHasAlphabet = otherParsed.hasAlphabet;
                                 
-                                if (otherClass === targetClass && !otherHasAlphabet) {
-                                    if (isFree(otherTeacher, targetDay, targetPeriodIndex) && isFree(targetTeacherData, otherDay, p)) {
-                                        swapResults.push({
-                                            name: otherTeacher.name,
-                                            day: otherDay,
-                                            period: p + 1,
-                                            subject: otherCell.replace(/\\r?\\n/g, ' ')
-                                        });
-                                    }
+                            if (otherClass === targetClass && !otherHasAlphabet) {
+                                if (isFree(otherTeacher, targetDay, targetPeriodIndex) && isFree(targetTeacherData, otherDay, p)) {
+                                    swapResults.push({
+                                        name: otherTeacher.name,
+                                        day: otherDay,
+                                        period: p + 1,
+                                        subject: otherCell.replace(/_x000D_/g, '').replace(/\\r?\\n/g, ' ')
+                                    });
                                 }
                             }
                         }
@@ -500,28 +523,46 @@ document.getElementById('generate-btn').addEventListener('click', function() {
 
         function closeSwapModal() { document.getElementById('swap-modal').style.display = 'none'; }
 
+        // 🔥 새 분석기가 적용된 화면 렌더링 로직
         function processSubject(subject) {
             if (!subject) return { html: '', style: '' };
-            const subjectStr = subject.toString();
-            let location = '', subjectName = subjectStr, cellBorderStyle = '';
-
-            const match = subjectStr.match(/^(\\S+)\\s+(.+)$/);
-            const isFormatAStyle = match && /^[A-Z]_/.test(match[1]);
-
-            if (match && !isFormatAStyle) { location = match[1]; subjectName = match[2]; }
-
+            
+            const parsed = parseCellData(subject);
+            let location = parsed.location;
+            let subjectName = parsed.subjectName;
+            let cellBorderStyle = '';
             let processedSubjectName = subjectName;
+            let colorApplied = false;
 
-            if (isColoringEnabled) { 
-                const spMatch = subjectName.match(/^([A-Z])_(\\S+)/);
-                if (spMatch) {
-                    const letter = spMatch[1];
-                    const index = letter.charCodeAt(0) - 65;
+            function applyAlphabetTag(letter, restName) {
+                const index = letter.toUpperCase().charCodeAt(0) - 65;
+                let color;
+                if (index >= 0 && index <= 25) {
                     const letterHue = (index * 137.5) % 360; 
                     const lightness = 45 + (index % 3) * 10;
-                    const color = \`hsl(\${letterHue}, 80%, \${lightness}%)\`; 
-                    cellBorderStyle = \`border-left: 5px solid \${color};\`;
-                    processedSubjectName = \`<span class="subject-tag" style="background-color: \${color};">\${letter}</span>\` + spMatch[2];
+                    color = \`hsl(\${letterHue}, 80%, \${lightness}%)\`;
+                } else {
+                    color = stringToHslColor(letter, 60, 55);
+                }
+                cellBorderStyle = \`border-left: 5px solid \${color};\`;
+                // 알파벳 뒤에 붙은 쓸데없는 공백이나 엔터 제거
+                const cleanedRestName = restName.replace(/^[\\s\\n_]+/, '');
+                return \`<span class="subject-tag" style="background-color: \${color};">\${letter}</span>\` + cleanedRestName;
+            }
+
+            if (isColoringEnabled) { 
+                const spMatch = subjectName.match(/^([A-Z])[\\s\\n]*_[\\s\\n]*([\\s\\S]+)$/);
+                if (spMatch) {
+                    processedSubjectName = applyAlphabetTag(spMatch[1], spMatch[2]);
+                    colorApplied = true;
+                }
+            }
+
+            if (isFormatBColoringEnabled && !colorApplied) {
+                const formatBMatch = subjectName.match(/^([A-Z])[\\s\\n]*([가-힣a-zA-Z][\\s\\S]*)$/);
+                if (formatBMatch) {
+                    processedSubjectName = applyAlphabetTag(formatBMatch[1], formatBMatch[2]);
+                    colorApplied = true;
                 }
             }
 
@@ -543,12 +584,18 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                         locationColor = stringToHslColor(location, 65, 50);
                     }
                     locationHtml = \`<span class="location-chip" style="background-color: \${locationColor};">\${location}</span>\`;
-                } else { locationHtml = location; }
+                } else { 
+                    locationHtml = location; 
+                }
             }
 
             let finalHtml = processedSubjectName;
-            if (locationHtml) finalHtml = isLineBreakEnabled ? \`\${locationHtml}<br>\${processedSubjectName}\` : \`\${locationHtml} \${processedSubjectName}\`;
-
+            if (locationHtml) {
+                finalHtml = isLineBreakEnabled ? \`\${locationHtml}<br>\${processedSubjectName}\` : \`\${locationHtml} \${processedSubjectName}\`;
+            }
+            
+            // 남은 실제 엔터들을 HTML 줄바꿈(<br>)으로 예쁘게 변경
+            finalHtml = finalHtml.replace(/\\r?\\n/g, '<br>');
             return { html: finalHtml, style: cellBorderStyle };
         }
 
@@ -565,12 +612,7 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                     const tName = cell.getAttribute('data-teacher');
                     const tDay = cell.getAttribute('data-day');
                     const tPeriod = parseInt(cell.getAttribute('data-period'), 10);
-                    
-                    const teacherObj = allSchedules.find(t => t.name === tName);
-                    if (teacherObj) {
-                        const rawCellData = teacherObj.schedule[tDay][tPeriod];
-                        openSwapModal(tName, tDay, tPeriod, rawCellData);
-                    }
+                    openSwapModal(tName, tDay, tPeriod);
                 }
             });
         }
@@ -631,7 +673,7 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                 
                 tableHTML += \`<tr><td>\${periodNum}교시\${timeStr}</td>\`;
                 ['월', '화', '수', '목', '금'].forEach((day, index) => {
-                    const cellData = teacher.schedule[day] && teacher.schedule[day][i] ? teacher.schedule[day][i].trim() : null;
+                    let cellData = teacher.schedule[day] && teacher.schedule[day][i] ? teacher.schedule[day][i].trim() : null;
                     const isToday = index === todayIdx;
                     const cellClass = isToday ? 'today-cell' : ''; 
                     
