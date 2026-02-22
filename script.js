@@ -30,7 +30,7 @@ function setupDragAndDrop(dropZoneId, fileInputId, fileCallback) {
 }
 
 // ==========================================
-// 2. 파일 파싱 로직
+// 2. 파일 파싱 로직 (🔥 컴시간 & 압핀 자동 감지)
 // ==========================================
 function processExcelFile(file) {
     if (!file) return;
@@ -43,39 +43,112 @@ function processExcelFile(file) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, {header: 1}); 
         
-        const schedules = [];
-        let dayHeaders = [];
-        let periodHeaders = [];
-        let dataStartRow = -1;
+        let schedules = [];
         
+        // 🔥 양식 자동 감지 로직 (압핀은 '번호', '교사', '시수' 헤더를 가짐)
+        let isAppin = false;
         for (let i = 0; i < Math.min(10, json.length); i++) {
-            const row = json[i];
-            if (row.includes('월') || row.includes('화')) {
-                let currentDay = '';
-                for(let c=1; c<row.length; c++){
-                    if(row[c] && typeof row[c] === 'string' && ['월','화','수','목','금'].some(d => row[c].includes(d))) currentDay = row[c].replace(/[^월화수목금]/g, '');
-                    dayHeaders[c] = currentDay;
+            const rowStr = json[i].join('');
+            if (rowStr.includes('번호') && rowStr.includes('교사') && rowStr.includes('시수')) {
+                isAppin = true;
+                break;
+            }
+        }
+
+        if (isAppin) {
+            // ==============================================
+            // 📌 압핀 프로그램 양식 파서 (2행 1조 구조)
+            // ==============================================
+            let dayHeaders = [];
+            let periodHeaders = [];
+            let dataStartRow = -1;
+
+            // 헤더 찾기
+            for (let i = 0; i < Math.min(10, json.length); i++) {
+                const row = json[i];
+                if (row.includes('월') && (row.includes('화') || row.includes('교사'))) {
+                    let currentDay = '';
+                    for(let c = 2; c < row.length; c++){ // 압핀은 C열(인덱스 2)부터 교시 시작
+                        if(row[c] && typeof row[c] === 'string' && ['월','화','수','목','금'].some(d => row[c].includes(d))) {
+                            currentDay = row[c].replace(/[^월화수목금]/g, '');
+                        }
+                        dayHeaders[c] = currentDay;
+                    }
+                    periodHeaders = json[i+1];
+                    dataStartRow = i + 2;
+                    break;
                 }
             }
-            if (row.includes(1) && row.includes(2) && row.includes(3)) { periodHeaders = row; dataStartRow = i + 1; break; }
-        }
-        
-        if (dataStartRow !== -1) {
-            for (let i = dataStartRow; i < json.length; i++) {
-                const row = json[i];
-                const teacherName = row[0]; 
-                
-                if (!teacherName || typeof teacherName !== 'string' || teacherName.trim() === '' || teacherName.includes('교사명')) continue;
-                const schedule = { '월': [], '화': [], '수': [], '목': [], '금': [] };
-                
-                for (let c = 1; c < periodHeaders.length; c++) {
-                    if (dayHeaders[c] && periodHeaders[c] && schedule[dayHeaders[c]]) {
-                        schedule[dayHeaders[c]][parseInt(periodHeaders[c]) - 1] = row[c] || null;
+
+            if (dataStartRow !== -1) {
+                for (let i = dataStartRow; i < json.length; i++) {
+                    const subjRow = json[i];
+                    if (!subjRow || subjRow.length < 2) continue;
+
+                    const teacherName = subjRow[1]; // B열에 교사명
+                    if (typeof teacherName === 'string' && teacherName.trim() !== '' && !teacherName.includes('교사')) {
+                        const locRow = json[i+1] || []; // 다음 줄은 장소(반) 정보
+                        const schedule = { '월': [], '화': [], '수': [], '목': [], '금': [] };
+
+                        for (let c = 2; c < periodHeaders.length; c++) {
+                            const day = dayHeaders[c];
+                            const period = periodHeaders[c];
+                            if (day && period && schedule[day]) {
+                                const pIdx = parseInt(period) - 1;
+                                const subj = subjRow[c] ? subjRow[c].toString().trim() : '';
+                                const loc = locRow[c] ? locRow[c].toString().trim() : '';
+
+                                if (subj || loc) {
+                                    // 장소와 과목을 병합하여 렌더러가 인식하기 쉬운 표준 텍스트로 변환
+                                    schedule[day][pIdx] = `${loc} ${subj}`.trim();
+                                } else {
+                                    schedule[day][pIdx] = null;
+                                }
+                            }
+                        }
+                        schedules.push({ name: teacherName.trim(), schedule: schedule, maxPeriods: 7, periodCounts: [7, 7, 7, 7, 7] });
+                        i++; // 장소 행은 이미 처리했으므로 건너뜀
                     }
                 }
-                schedules.push({ name: teacherName.trim(), schedule: schedule, maxPeriods: 7, periodCounts: [7, 7, 7, 7, 7] });
+            }
+        } else {
+            // ==============================================
+            // 📌 컴시간 프로그램 양식 파서 (1행 1조 구조)
+            // ==============================================
+            let dayHeaders = [];
+            let periodHeaders = [];
+            let dataStartRow = -1;
+            
+            for (let i = 0; i < Math.min(10, json.length); i++) {
+                const row = json[i];
+                if (row.includes('월') || row.includes('화')) {
+                    let currentDay = '';
+                    for(let c=1; c<row.length; c++){
+                        if(row[c] && typeof row[c] === 'string' && ['월','화','수','목','금'].some(d => row[c].includes(d))) currentDay = row[c].replace(/[^월화수목금]/g, '');
+                        dayHeaders[c] = currentDay;
+                    }
+                }
+                if (row.includes(1) && row.includes(2) && row.includes(3)) { periodHeaders = row; dataStartRow = i + 1; break; }
+            }
+            
+            if (dataStartRow !== -1) {
+                for (let i = dataStartRow; i < json.length; i++) {
+                    const row = json[i];
+                    const teacherName = row[0]; 
+                    
+                    if (!teacherName || typeof teacherName !== 'string' || teacherName.trim() === '' || teacherName.includes('교사명')) continue;
+                    const schedule = { '월': [], '화': [], '수': [], '목': [], '금': [] };
+                    
+                    for (let c = 1; c < periodHeaders.length; c++) {
+                        if (dayHeaders[c] && periodHeaders[c] && schedule[dayHeaders[c]]) {
+                            schedule[dayHeaders[c]][parseInt(periodHeaders[c]) - 1] = row[c] || null;
+                        }
+                    }
+                    schedules.push({ name: teacherName.trim(), schedule: schedule, maxPeriods: 7, periodCounts: [7, 7, 7, 7, 7] });
+                }
             }
         }
+        
         parsedSchedules = schedules;
         document.getElementById('upload-status').innerText = `✅ 총 ${schedules.length}명 파싱 완료!`;
         const btn = document.getElementById('generate-btn');
@@ -386,21 +459,18 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             return 'hsl(' + (hash % 360) + ', ' + s + '%, ' + l + '%)';
         }
 
-        // 🔥 새롭게 탑재된 인공지능급 텍스트 분석기 (장소와 알파벳을 완벽히 구분)
         function parseCellData(rawCellData) {
             if (!rawCellData) return { location: '', subjectName: '', hasAlphabet: false };
             let str = rawCellData.toString().replace(/_x000D_/g, '').trim();
             let loc = '';
             let subj = str;
             
-            // 띄어쓰기나 줄바꿈을 기준으로 첫 번째 단어와 나머지로 분리
             const m = str.match(/^(\\S+)\\s+([\\s\\S]+)$/);
             let isLoc = false;
             
             if (m) {
                 isLoc = true;
                 const firstWord = m[1];
-                // 첫 단어가 단순 알파벳 1개거나(C), 알파벳_(C_)거나, 알파벳+한글(C고전)이면 장소가 아님!
                 if (/^[A-Z]$/.test(firstWord)) isLoc = false;
                 if (/^[A-Z]_/.test(firstWord)) isLoc = false;
                 if (/^[A-Z][가-힣a-zA-Z]+/.test(firstWord)) isLoc = false;
@@ -523,7 +593,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
 
         function closeSwapModal() { document.getElementById('swap-modal').style.display = 'none'; }
 
-        // 🔥 새 분석기가 적용된 화면 렌더링 로직
         function processSubject(subject) {
             if (!subject) return { html: '', style: '' };
             
@@ -545,7 +614,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                     color = stringToHslColor(letter, 60, 55);
                 }
                 cellBorderStyle = \`border-left: 5px solid \${color};\`;
-                // 알파벳 뒤에 붙은 쓸데없는 공백이나 엔터 제거
                 const cleanedRestName = restName.replace(/^[\\s\\n_]+/, '');
                 return \`<span class="subject-tag" style="background-color: \${color};">\${letter}</span>\` + cleanedRestName;
             }
@@ -594,7 +662,6 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                 finalHtml = isLineBreakEnabled ? \`\${locationHtml}<br>\${processedSubjectName}\` : \`\${locationHtml} \${processedSubjectName}\`;
             }
             
-            // 남은 실제 엔터들을 HTML 줄바꿈(<br>)으로 예쁘게 변경
             finalHtml = finalHtml.replace(/\\r?\\n/g, '<br>');
             return { html: finalHtml, style: cellBorderStyle };
         }
