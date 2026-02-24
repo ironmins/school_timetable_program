@@ -30,7 +30,7 @@ function setupDragAndDrop(dropZoneId, fileInputId, fileCallback) {
 }
 
 // ==========================================
-// 2. 파일 파싱 로직 (🔥 컴시간 & 압핀 자동 감지)
+// 2. 파일 파싱 로직
 // ==========================================
 function processExcelFile(file) {
     if (!file) return;
@@ -45,7 +45,6 @@ function processExcelFile(file) {
         
         let schedules = [];
         
-        // 🔥 양식 자동 감지 로직 (압핀은 '번호', '교사', '시수' 헤더를 가짐)
         let isAppin = false;
         for (let i = 0; i < Math.min(10, json.length); i++) {
             const rowStr = json[i].join('');
@@ -56,19 +55,15 @@ function processExcelFile(file) {
         }
 
         if (isAppin) {
-            // ==============================================
-            // 📌 압핀 프로그램 양식 파서 (2행 1조 구조)
-            // ==============================================
             let dayHeaders = [];
             let periodHeaders = [];
             let dataStartRow = -1;
 
-            // 헤더 찾기
             for (let i = 0; i < Math.min(10, json.length); i++) {
                 const row = json[i];
                 if (row.includes('월') && (row.includes('화') || row.includes('교사'))) {
                     let currentDay = '';
-                    for(let c = 2; c < row.length; c++){ // 압핀은 C열(인덱스 2)부터 교시 시작
+                    for(let c = 2; c < row.length; c++){
                         if(row[c] && typeof row[c] === 'string' && ['월','화','수','목','금'].some(d => row[c].includes(d))) {
                             currentDay = row[c].replace(/[^월화수목금]/g, '');
                         }
@@ -85,9 +80,9 @@ function processExcelFile(file) {
                     const subjRow = json[i];
                     if (!subjRow || subjRow.length < 2) continue;
 
-                    const teacherName = subjRow[1]; // B열에 교사명
+                    const teacherName = subjRow[1];
                     if (typeof teacherName === 'string' && teacherName.trim() !== '' && !teacherName.includes('교사')) {
-                        const locRow = json[i+1] || []; // 다음 줄은 장소(반) 정보
+                        const locRow = json[i+1] || [];
                         const schedule = { '월': [], '화': [], '수': [], '목': [], '금': [] };
 
                         for (let c = 2; c < periodHeaders.length; c++) {
@@ -99,7 +94,6 @@ function processExcelFile(file) {
                                 const loc = locRow[c] ? locRow[c].toString().trim() : '';
 
                                 if (subj || loc) {
-                                    // 장소와 과목을 병합하여 렌더러가 인식하기 쉬운 표준 텍스트로 변환
                                     schedule[day][pIdx] = `${loc} ${subj}`.trim();
                                 } else {
                                     schedule[day][pIdx] = null;
@@ -107,14 +101,11 @@ function processExcelFile(file) {
                             }
                         }
                         schedules.push({ name: teacherName.trim(), schedule: schedule, maxPeriods: 7, periodCounts: [7, 7, 7, 7, 7] });
-                        i++; // 장소 행은 이미 처리했으므로 건너뜀
+                        i++;
                     }
                 }
             }
         } else {
-            // ==============================================
-            // 📌 컴시간 프로그램 양식 파서 (1행 1조 구조)
-            // ==============================================
             let dayHeaders = [];
             let periodHeaders = [];
             let dataStartRow = -1;
@@ -342,7 +333,7 @@ document.getElementById('generate-btn').addEventListener('click', function() {
         .empty-state-icon { font-size: 5em; margin-bottom: 20px; opacity: 0.5; color: var(--primary-color); }
         
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px); }
-        .modal-content { background: var(--card-background); width: 90%; max-width: 600px; max-height: 85vh; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalIn 0.3s ease-out; }
+        .modal-content { background: var(--card-background); width: 90%; max-width: 700px; max-height: 85vh; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalIn 0.3s ease-out; }
         @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .modal-header { padding: 20px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--first-col-bg); }
         .modal-header h3 { margin: 0; font-size: 1.2em; color: var(--text-color); display: flex; align-items: center; gap: 8px;}
@@ -350,6 +341,14 @@ document.getElementById('generate-btn').addEventListener('click', function() {
         .close-btn:hover { color: var(--primary-color); }
         .modal-body { padding: 25px; overflow-y: auto; background: var(--card-background); }
         
+        .modal-tabs { display: flex; border-bottom: 2px solid var(--border-color); margin-bottom: 20px; }
+        .modal-tab { flex: 1; padding: 12px 16px; text-align: center; font-size: 14px; font-weight: 600; cursor: pointer; border: none; background: none; color: var(--subtle-text); transition: all 0.2s; font-family: inherit; position: relative; }
+        .modal-tab:hover { color: var(--text-color); background: var(--empty-bg); }
+        .modal-tab.active { color: var(--primary-color); }
+        .modal-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: var(--primary-color); border-radius: 2px 2px 0 0; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
         .result-section { margin-bottom: 25px; }
         .result-section h4 { margin: 0 0 15px 0; color: var(--primary-color); font-size: 1.1em; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
         .result-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
@@ -358,6 +357,23 @@ document.getElementById('generate-btn').addEventListener('click', function() {
         .result-item span { font-size: 12px; color: var(--subtle-text); display: block; margin-top: 4px; }
         .no-result { color: var(--subtle-text); font-size: 14px; text-align: center; padding: 20px; background: var(--empty-bg); border-radius: 8px; }
         .error-notice { background: #FFF5F5; border-left: 4px solid #FC8181; padding: 15px; margin-bottom: 20px; color: #C53030; font-size: 14px; border-radius: 4px; line-height: 1.5; }
+        .info-notice { background: #EBF8FF; border-left: 4px solid #63B3ED; padding: 15px; margin-bottom: 20px; color: #2B6CB0; font-size: 14px; border-radius: 4px; line-height: 1.5; }
+
+        .cycle-card { background: var(--empty-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; transition: all 0.2s; }
+        .cycle-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: var(--primary-color); }
+        .cycle-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .cycle-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary-color); color: white; font-size: 13px; font-weight: 700; }
+        .cycle-card-title { font-weight: 700; font-size: 15px; color: var(--text-color); }
+        .cycle-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .cycle-step { background: var(--card-background); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; font-size: 13px; line-height: 1.5; text-align: center; min-width: 120px; }
+        .cycle-step .step-teacher { font-weight: 700; color: var(--primary-color); font-size: 14px; }
+        .cycle-step .step-detail { color: var(--subtle-text); font-size: 12px; margin-top: 3px; }
+        .cycle-arrow { font-size: 20px; color: var(--primary-color); font-weight: 700; }
+        .cycle-summary { margin-top: 12px; font-size: 13px; color: var(--subtle-text); background: var(--card-background); padding: 10px 14px; border-radius: 8px; border: 1px dashed var(--border-color); line-height: 1.7; }
+
+        .loading-spinner { display: flex; align-items: center; justify-content: center; padding: 40px; gap: 12px; color: var(--subtle-text); font-size: 15px; }
+        .spinner { width: 24px; height: 24px; border: 3px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .footer-credit { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--subtle-text); font-size: 13px; line-height: 1.6; }
         .footer-credit p { margin: 0; }
@@ -367,6 +383,9 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             .clock-container { font-size: 13px; margin: 15px auto 25px auto; padding: 6px 16px; }
             th:first-child, td:first-child { position: sticky; left: 0; background: var(--first-col-bg); z-index: 1; }
             .result-list { grid-template-columns: 1fr; }
+            .cycle-flow { flex-direction: column; }
+            .cycle-arrow { transform: rotate(90deg); }
+            .modal-tabs { flex-wrap: wrap; }
         }
         @media print {
             body { background: white; }
@@ -443,6 +462,10 @@ document.getElementById('generate-btn').addEventListener('click', function() {
         let selectedIndex = -1;
         let favorites = JSON.parse(localStorage.getItem('favTeachers') || '[]');
 
+        // 교사명 -> 데이터 빠른 조회용 맵
+        const teacherMap = {};
+        allSchedules.forEach(t => { teacherMap[t.name] = t; });
+
         function updateClock() {
             const now = new Date();
             const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -487,11 +510,164 @@ document.getElementById('generate-btn').addEventListener('click', function() {
 
         function isFree(teacherData, day, periodIndex) {
             const cell = teacherData.schedule[day][periodIndex];
-            if (!cell || cell === null || cell.trim() === '') return true;
+            if (!cell || cell === null || cell.toString().trim() === '') return true;
             if (cell.includes('공강')) return true;
             return false;
         }
 
+        // ==========================================
+        // 다자간 순환 교체 탐색 엔진
+        // ==========================================
+        
+        /**
+         * 슬롯(slot) = { day: '월', period: 0 } (period는 0-based index)
+         * 
+         * 3인 순환 교체 조건:
+         *   나(A)의 targetSlot 수업을 B가 대신 → B는 targetSlot에 비어있어야 함
+         *   B의 어떤 슬롯(slotB)의 수업을 C가 대신 → C는 slotB에 비어있어야 함
+         *   C의 어떤 슬롯(slotC)의 수업을 A가 대신 → A는 slotC에 비어있어야 함
+         *   + 같은 학반(location) 조건: A의 targetSlot 학반 = B의 slotB 학반 = C의 slotC 학반
+         * 
+         * 4인도 동일 패턴으로 확장
+         */
+        
+        function findMultiSwapCycles(targetTeacherName, targetDay, targetPeriodIndex, maxDepth) {
+            const targetTeacher = teacherMap[targetTeacherName];
+            if (!targetTeacher) return [];
+            
+            const targetCell = targetTeacher.schedule[targetDay][targetPeriodIndex];
+            if (!targetCell) return [];
+            
+            const targetParsed = parseCellData(targetCell);
+            const targetClass = targetParsed.location;
+            
+            // 선택과목은 교체 불가
+            if (targetParsed.hasAlphabet || !targetClass) return [];
+            
+            const days = ['월', '화', '수', '목', '금'];
+            const results = [];
+            const seen = new Set(); // 중복 방지
+            
+            // targetSlot에 빈 시간인 교사들 (= 나의 수업을 대신할 수 있는 후보)
+            const firstHopCandidates = [];
+            allSchedules.forEach(t => {
+                if (t.name === targetTeacherName) return;
+                if (isFree(t, targetDay, targetPeriodIndex)) {
+                    firstHopCandidates.push(t);
+                }
+            });
+            
+            // 특정 교사의 특정 학반(targetClass) 수업 슬롯을 모두 찾기
+            function findClassSlots(teacher, classLoc, excludeSlots) {
+                const slots = [];
+                days.forEach(d => {
+                    for (let p = 0; p < 7; p++) {
+                        // 제외 슬롯 체크
+                        if (excludeSlots.some(es => es.day === d && es.period === p)) continue;
+                        
+                        const cell = teacher.schedule[d][p];
+                        if (!cell || isFree(teacher, d, p)) continue;
+                        const parsed = parseCellData(cell);
+                        if (parsed.location === classLoc && !parsed.hasAlphabet) {
+                            slots.push({ day: d, period: p, cell: cell });
+                        }
+                    }
+                });
+                return slots;
+            }
+            
+            // ---- 3인 순환 탐색 ----
+            // A(target) → B → C → A
+            // B는 targetSlot에 비어있고, B의 targetClass 수업(slotB)이 존재
+            // C는 slotB에 비어있고, C의 targetClass 수업(slotC)이 존재
+            // A는 slotC에 비어있어야 함
+            
+            for (const B of firstHopCandidates) {
+                // B의 동일 학반 수업 찾기
+                const bSlots = findClassSlots(B, targetClass, [{ day: targetDay, period: targetPeriodIndex }]);
+                
+                for (const slotB of bSlots) {
+                    // slotB에 비어있는 교사 C 찾기 (A, B 제외)
+                    allSchedules.forEach(C => {
+                        if (C.name === targetTeacherName || C.name === B.name) return;
+                        if (!isFree(C, slotB.day, slotB.period)) return;
+                        
+                        if (maxDepth >= 3) {
+                            // C의 동일 학반 수업 찾기
+                            const cSlots = findClassSlots(C, targetClass, [
+                                { day: targetDay, period: targetPeriodIndex },
+                                { day: slotB.day, period: slotB.period }
+                            ]);
+                            
+                            for (const slotC of cSlots) {
+                                // A가 slotC에 비어있는지?
+                                if (isFree(targetTeacher, slotC.day, slotC.period)) {
+                                    // 3인 순환 발견!
+                                    const key = [targetTeacherName, B.name, C.name].sort().join('|') + '|' + 
+                                                [targetDay+targetPeriodIndex, slotB.day+slotB.period, slotC.day+slotC.period].sort().join('|');
+                                    if (!seen.has(key)) {
+                                        seen.add(key);
+                                        results.push({
+                                            type: 3,
+                                            chain: [
+                                                { teacher: targetTeacherName, gives: { day: targetDay, period: targetPeriodIndex, cell: targetCell }, receives: { day: slotC.day, period: slotC.period, cell: slotC.cell, from: C.name } },
+                                                { teacher: B.name, gives: { day: slotB.day, period: slotB.period, cell: slotB.cell }, receives: { day: targetDay, period: targetPeriodIndex, cell: targetCell, from: targetTeacherName } },
+                                                { teacher: C.name, gives: { day: slotC.day, period: slotC.period, cell: slotC.cell }, receives: { day: slotB.day, period: slotB.period, cell: slotB.cell, from: B.name } }
+                                            ]
+                                        });
+                                    }
+                                }
+                                
+                                // ---- 4인 순환 탐색 ----
+                                // A → B → C → D → A
+                                if (maxDepth >= 4) {
+                                    // C는 slotB에 비어있음, C의 동일학반 수업(slotC)이 존재
+                                    // D는 slotC에 비어있고, D의 동일학반 수업(slotD)이 존재
+                                    // A는 slotD에 비어있어야 함
+                                    
+                                    // slotC에 비어있는 교사 D 찾기 (A, B, C 제외)
+                                    allSchedules.forEach(D => {
+                                        if (D.name === targetTeacherName || D.name === B.name || D.name === C.name) return;
+                                        if (!isFree(D, slotC.day, slotC.period)) return;
+                                        
+                                        const dSlots = findClassSlots(D, targetClass, [
+                                            { day: targetDay, period: targetPeriodIndex },
+                                            { day: slotB.day, period: slotB.period },
+                                            { day: slotC.day, period: slotC.period }
+                                        ]);
+                                        
+                                        for (const slotD of dSlots) {
+                                            if (isFree(targetTeacher, slotD.day, slotD.period)) {
+                                                const key = [targetTeacherName, B.name, C.name, D.name].sort().join('|') + '|' +
+                                                            [targetDay+targetPeriodIndex, slotB.day+slotB.period, slotC.day+slotC.period, slotD.day+slotD.period].sort().join('|');
+                                                if (!seen.has(key)) {
+                                                    seen.add(key);
+                                                    results.push({
+                                                        type: 4,
+                                                        chain: [
+                                                            { teacher: targetTeacherName, gives: { day: targetDay, period: targetPeriodIndex, cell: targetCell }, receives: { day: slotD.day, period: slotD.period, cell: slotD.cell, from: D.name } },
+                                                            { teacher: B.name, gives: { day: slotB.day, period: slotB.period, cell: slotB.cell }, receives: { day: targetDay, period: targetPeriodIndex, cell: targetCell, from: targetTeacherName } },
+                                                            { teacher: C.name, gives: { day: slotC.day, period: slotC.period, cell: slotC.cell }, receives: { day: slotB.day, period: slotB.period, cell: slotB.cell, from: B.name } },
+                                                            { teacher: D.name, gives: { day: slotD.day, period: slotD.period, cell: slotD.cell }, receives: { day: slotC.day, period: slotC.period, cell: slotC.cell, from: C.name } }
+                                                        ]
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            return results;
+        }
+
+        // ==========================================
+        // 모달 열기 (탭 구조로 리팩토링)
+        // ==========================================
         function openSwapModal(targetTeacherName, targetDay, targetPeriodIndex) {
             const modal = document.getElementById('swap-modal');
             const bodyContent = document.getElementById('modal-body-content');
@@ -507,6 +683,7 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             const targetClass = targetParsed.location;
             const hasAlphabet = targetParsed.hasAlphabet;
             
+            // ---- 기존 2인 교체 + 대체 결과 계산 ----
             let swapResults = [];
             let subResults = [];
             const days = ['월', '화', '수', '목', '금'];
@@ -522,14 +699,11 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                     days.forEach(otherDay => {
                         for (let p = 0; p < 7; p++) {
                             if (otherDay === targetDay && p === targetPeriodIndex) continue;
-
                             let otherCell = otherTeacher.schedule[otherDay][p];
                             if (!otherCell || isFree(otherTeacher, otherDay, p)) continue;
-                            
                             const otherParsed = parseCellData(otherCell);
                             const otherClass = otherParsed.location;
                             const otherHasAlphabet = otherParsed.hasAlphabet;
-                                
                             if (otherClass === targetClass && !otherHasAlphabet) {
                                 if (isFree(otherTeacher, targetDay, targetPeriodIndex) && isFree(targetTeacherData, otherDay, p)) {
                                     swapResults.push({
@@ -545,7 +719,17 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                 }
             });
 
+            // ---- HTML 빌드: 탭 구조 ----
             let html = '';
+            
+            // 탭 헤더
+            html += \`<div class="modal-tabs">
+                <button class="modal-tab active" onclick="switchTab(event, 'tab-basic')">📋 기본 (2인 교체/대체)</button>
+                <button class="modal-tab" onclick="switchTab(event, 'tab-multi')">🔄 다자간 순환 교체 (3~4인)</button>
+            </div>\`;
+            
+            // ==================== 탭 1: 기본 ====================
+            html += \`<div id="tab-basic" class="tab-content active">\`;
             
             if (hasAlphabet) {
                 html += \`<div class="error-notice">
@@ -568,7 +752,7 @@ document.getElementById('generate-btn').addEventListener('click', function() {
                     });
                     html += \`</ul></div>\`;
                 } else {
-                    html += \`<div class="no-result">조건에 맞는 교체 가능 교사가 없습니다.</div></div>\`;
+                    html += \`<div class="no-result">조건에 맞는 1:1 교체 가능 교사가 없습니다. <b>다자간 순환 교체</b> 탭을 확인해보세요!</div></div>\`;
                 }
             }
 
@@ -586,9 +770,133 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             } else {
                 html += \`<div class="no-result">해당 시간에 공강인 교사가 없습니다.</div></div>\`;
             }
+            html += \`</div>\`; // tab-basic 닫기
+            
+            // ==================== 탭 2: 다자간 순환 교체 ====================
+            html += \`<div id="tab-multi" class="tab-content">\`;
+            
+            if (hasAlphabet || !targetClass) {
+                html += \`<div class="error-notice">
+                    <b>⚠️ 다자간 교체 불가</b><br>
+                    선택과목/분반 수업이거나 수업장소 정보가 없는 경우 다자간 순환 교체 탐색이 불가능합니다.
+                </div>\`;
+            } else {
+                html += \`<div class="info-notice">
+                    <b>💡 다자간 순환 교체란?</b><br>
+                    1:1 맞교환이 불가능할 때, 3~4명의 교사가 서로의 동일 학반(\${targetClass}반) 수업을 순환하여 교체하는 방법입니다. 
+                    각 교사는 다른 교사의 수업 시간에 비어있어야 하며, 모두 같은 학반 수업이어야 합니다.
+                </div>\`;
+                html += \`<div id="multi-swap-results"><div class="loading-spinner"><div class="spinner"></div>순환 교체 경로를 탐색 중입니다...</div></div>\`;
+            }
+            
+            html += \`</div>\`; // tab-multi 닫기
 
             bodyContent.innerHTML = html;
             modal.style.display = 'flex';
+            
+            // 다자간 탐색은 비동기로 실행 (UI 블로킹 방지)
+            if (!hasAlphabet && targetClass) {
+                setTimeout(() => {
+                    const multiResults = findMultiSwapCycles(targetTeacherName, targetDay, targetPeriodIndex, 4);
+                    renderMultiSwapResults(multiResults, targetClass);
+                }, 50);
+            }
+        }
+
+        function renderMultiSwapResults(results, targetClass) {
+            const container = document.getElementById('multi-swap-results');
+            if (!container) return;
+            
+            if (results.length === 0) {
+                container.innerHTML = \`<div class="no-result">동일 학반(\${targetClass}반) 조건을 만족하는 다자간 순환 교체 경로가 없습니다.</div>\`;
+                return;
+            }
+            
+            // 3인과 4인 분리
+            const threeWay = results.filter(r => r.type === 3);
+            const fourWay = results.filter(r => r.type === 4);
+            
+            let html = '';
+            
+            if (threeWay.length > 0) {
+                html += \`<div class="result-section">
+                    <h4>🔄 3인 순환 교체 (\${threeWay.length}건 발견)</h4>
+                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">3명의 교사가 서로의 \${targetClass}반 수업을 순환하여 교체합니다.</p>\`;
+                
+                threeWay.slice(0, 20).forEach((cycle, idx) => {
+                    html += renderCycleCard(cycle, idx + 1);
+                });
+                
+                if (threeWay.length > 20) {
+                    html += \`<div class="no-result">외 \${threeWay.length - 20}건이 더 있습니다.</div>\`;
+                }
+                html += \`</div>\`;
+            }
+            
+            if (fourWay.length > 0) {
+                html += \`<div class="result-section">
+                    <h4>🔄 4인 순환 교체 (\${fourWay.length}건 발견)</h4>
+                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">4명의 교사가 서로의 \${targetClass}반 수업을 순환하여 교체합니다.</p>\`;
+                
+                fourWay.slice(0, 15).forEach((cycle, idx) => {
+                    html += renderCycleCard(cycle, idx + 1);
+                });
+                
+                if (fourWay.length > 15) {
+                    html += \`<div class="no-result">외 \${fourWay.length - 15}건이 더 있습니다.</div>\`;
+                }
+                html += \`</div>\`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        function renderCycleCard(cycle, number) {
+            const chain = cycle.chain;
+            let html = \`<div class="cycle-card">
+                <div class="cycle-card-header">
+                    <span class="cycle-badge">\${number}</span>
+                    <span class="cycle-card-title">\${cycle.type}인 순환 교체 — \${chain.map(c => c.teacher).join(' → ')} → \${chain[0].teacher}</span>
+                </div>
+                <div class="cycle-flow">\`;
+            
+            chain.forEach((step, i) => {
+                const ext = extNumbers[step.teacher] ? \` (📞\${extNumbers[step.teacher]})\` : '';
+                const cellClean = step.gives.cell.replace(/_x000D_/g, '').replace(/\\r?\\n/g, ' ');
+                html += \`<div class="cycle-step">
+                    <div class="step-teacher">\${step.teacher}\${ext}</div>
+                    <div class="step-detail">\${step.gives.day} \${step.gives.period + 1}교시</div>
+                    <div class="step-detail" style="font-size:11px; color:var(--subtle-text);">\${cellClean}</div>
+                </div>\`;
+                html += \`<span class="cycle-arrow">→</span>\`;
+            });
+            
+            // 마지막 화살표 뒤에 처음으로 돌아오는 표시
+            html += \`<div class="cycle-step" style="border: 2px dashed var(--primary-color); background: var(--empty-bg);">
+                <div class="step-teacher">\${chain[0].teacher}</div>
+                <div class="step-detail" style="color:var(--primary-color); font-weight:600;">↩ 순환 완료</div>
+            </div>\`;
+            
+            html += \`</div>\`; // cycle-flow
+            
+            // 요약
+            html += \`<div class="cycle-summary"><b>📋 교체 방법:</b><br>\`;
+            chain.forEach(step => {
+                const nextStep = chain.find(c => c.gives.day === step.receives.day && c.gives.period === step.receives.period);
+                const cellClean = step.gives.cell.replace(/_x000D_/g, '').replace(/\\r?\\n/g, ' ');
+                html += \`• <b>\${step.teacher}</b> 선생님의 <b>\${step.gives.day} \${step.gives.period + 1}교시</b> (\${cellClean}) 수업을 → <b>\${step.receives.from}</b> 선생님의 시간(\${step.receives.day} \${step.receives.period + 1}교시)으로 이동<br>\`;
+            });
+            html += \`</div>\`;
+            
+            html += \`</div>\`; // cycle-card
+            return html;
+        }
+
+        function switchTab(event, tabId) {
+            document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
         }
 
         function closeSwapModal() { document.getElementById('swap-modal').style.display = 'none'; }
