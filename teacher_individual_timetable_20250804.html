@@ -91,16 +91,26 @@
         .error-notice { background: #FFF5F5; border-left: 4px solid #FC8181; padding: 15px; margin-bottom: 20px; color: #C53030; font-size: 14px; border-radius: 4px; line-height: 1.5; }
         .info-notice { background: #EBF8FF; border-left: 4px solid #63B3ED; padding: 15px; margin-bottom: 20px; color: #2B6CB0; font-size: 14px; border-radius: 4px; line-height: 1.5; }
 
+        .multi-filter-box { background: var(--first-col-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
+        .multi-filter-label { font-size: 13px; font-weight: 700; color: var(--text-color); margin-bottom: 10px; }
+        .multi-filter-slots { display: flex; flex-wrap: wrap; gap: 8px; }
+        .multi-filter-btn { padding: 6px 14px; border: 1.5px solid var(--border-color); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--card-background); color: var(--text-color); font-family: inherit; transition: all 0.18s; }
+        .multi-filter-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--empty-bg); }
+        .multi-filter-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .multi-filter-clear { margin-top: 10px; padding: 4px 14px; border: none; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; background: #FC8181; color: white; font-family: inherit; transition: all 0.18s; }
+        .multi-filter-clear:hover { background: #F56565; }
+
         .cycle-card { background: var(--empty-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; transition: all 0.2s; }
         .cycle-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: var(--primary-color); }
         .cycle-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
         .cycle-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary-color); color: white; font-size: 13px; font-weight: 700; }
         .cycle-card-title { font-weight: 700; font-size: 15px; color: var(--text-color); }
-        .cycle-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-        .cycle-step { background: var(--card-background); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; font-size: 13px; line-height: 1.5; text-align: center; min-width: 120px; }
-        .cycle-step .step-teacher { font-weight: 700; color: var(--primary-color); font-size: 14px; }
-        .cycle-step .step-detail { color: var(--subtle-text); font-size: 12px; margin-top: 3px; }
-        .cycle-arrow { font-size: 20px; color: var(--primary-color); font-weight: 700; }
+        .cycle-flow { display: flex; flex-wrap: nowrap; align-items: stretch; gap: 4px; }
+        .cycle-step { background: var(--card-background); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 6px; font-size: 12px; line-height: 1.4; text-align: center; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .cycle-step .step-teacher { font-weight: 700; color: var(--primary-color); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cycle-step .step-detail { color: var(--subtle-text); font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cycle-step .step-next { color: var(--primary-color); font-size: 10px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cycle-arrow { font-size: 14px; color: var(--primary-color); font-weight: 700; flex-shrink: 0; align-self: center; }
         .cycle-summary { margin-top: 12px; font-size: 13px; color: var(--subtle-text); background: var(--card-background); padding: 10px 14px; border-radius: 8px; border: 1px dashed var(--border-color); line-height: 1.7; }
 
         .loading-spinner { display: flex; align-items: center; justify-content: center; padding: 40px; gap: 12px; color: var(--subtle-text); font-size: 15px; }
@@ -159,7 +169,7 @@
         </div>
 
         <div class="footer-credit">
-            <p>Last updated: 2026-02-24 21:38 (KST)</p>
+            <p>Last updated: 2026-02-25 20:19 (KST)</p>
             <p>Made by IRONMIN (Jeonju high school)</p>
         </div>
     </div>
@@ -535,52 +545,144 @@
             }
         }
 
+        // 현재 열린 모달의 다자간 교체 결과를 전역에 보관 (필터링에 재사용)
+        let _multiSwapAllResults = [];
+        let _multiSwapTargetClass = '';
+
         function renderMultiSwapResults(results, targetClass) {
             const container = document.getElementById('multi-swap-results');
             if (!container) return;
+            
+            _multiSwapAllResults = results;
+            _multiSwapTargetClass = targetClass;
             
             if (results.length === 0) {
                 container.innerHTML = `<div class="no-result">동일 학반(${targetClass}반) 조건을 만족하는 다자간 순환 교체 경로가 없습니다.</div>`;
                 return;
             }
-            
-            // 3인과 4인 분리
-            const threeWay = results.filter(r => r.type === 3);
-            const fourWay = results.filter(r => r.type === 4);
-            
+
+            // 본인(chain[0])이 교체 후 대신 들어가게 될 요일·교시(receives) 목록 수집
+            // → 사용자가 "이 시간에 들어가는 경우만 보고 싶다"고 선택하는 기준
+            const dayOrder = ['월', '화', '수', '목', '금'];
+            const receiveSlotSet = new Map();
+            results.forEach(cycle => {
+                const rec = cycle.chain[0].receives; // 본인이 받게 되는 슬롯
+                const key = rec.day + '|' + rec.period;
+                if (!receiveSlotSet.has(key)) {
+                    receiveSlotSet.set(key, { day: rec.day, period: rec.period });
+                }
+            });
+            const sortedReceiveSlots = Array.from(receiveSlotSet.values()).sort((a, b) => {
+                const di = dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
+                return di !== 0 ? di : a.period - b.period;
+            });
+
+            // 필터 UI — "교체 후 내가 들어갈 요일·교시" 선택
+            let filterHtml = `<div class="multi-filter-box" id="multi-filter-box">
+                <div class="multi-filter-label">📌 교체 후 내가 들어갈 요일·교시 선택
+                    <span style="font-size:12px; color:var(--subtle-text); font-weight:400; margin-left:6px;">선택하면 해당 시간에 내 수업이 배치되는 경우만 모두 표시됩니다</span>
+                </div>
+                <div class="multi-filter-slots">`;
+            sortedReceiveSlots.forEach(slot => {
+                const key = slot.day + '|' + slot.period;
+                filterHtml += `<button class="multi-filter-btn" data-slot="${key}" onclick="applyMultiFilter(this)">${slot.day} ${slot.period + 1}교시</button>`;
+            });
+            filterHtml += `</div>
+                <button class="multi-filter-clear" onclick="clearMultiFilter()" style="display:none;" id="multi-filter-clear">✕ 선택 해제 (전체 보기)</button>
+            </div>`;
+
+            container.innerHTML = filterHtml + `<div id="multi-filtered-results"></div>`;
+            renderFilteredResults(null); // 초기: 필터 없이 상위 N건 표시
+        }
+
+        function renderFilteredResults(filterSlotKey) {
+            const container = document.getElementById('multi-filtered-results');
+            if (!container) return;
+            const results = _multiSwapAllResults;
+            const targetClass = _multiSwapTargetClass;
+
+            let threeWay = results.filter(r => r.type === 3);
+            let fourWay = results.filter(r => r.type === 4);
+            const isFiltered = filterSlotKey !== null;
+
+            if (isFiltered) {
+                // chain[0].receives(본인이 받을 슬롯)가 선택한 요일·교시인 경우만 필터링, 전체 출력
+                const [fDay, fPeriod] = filterSlotKey.split('|');
+                const fp = parseInt(fPeriod);
+                threeWay = threeWay.filter(cycle => {
+                    const rec = cycle.chain[0].receives;
+                    return rec.day === fDay && rec.period === fp;
+                });
+                fourWay = fourWay.filter(cycle => {
+                    const rec = cycle.chain[0].receives;
+                    return rec.day === fDay && rec.period === fp;
+                });
+            }
+
             let html = '';
-            
+
             if (threeWay.length > 0) {
+                const total3 = results.filter(r => r.type === 3).length;
+                const h3title = isFiltered ? '(' + threeWay.length + '건 해당)' : '(' + total3 + '건 발견)';
+                const h3desc = isFiltered
+                    ? '선택한 시간에 내 수업이 배치되는 3인 교체 <b>' + threeWay.length + '건</b>을 모두 표시합니다.'
+                    : '3명의 교사가 서로의 ' + targetClass + '반 수업을 순환하여 교체합니다.';
                 html += `<div class="result-section">
-                    <h4>🔄 3인 순환 교체 (${threeWay.length}건 발견)</h4>
-                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">3명의 교사가 서로의 ${targetClass}반 수업을 순환하여 교체합니다.</p>`;
-                
-                threeWay.slice(0, 20).forEach((cycle, idx) => {
-                    html += renderCycleCard(cycle, idx + 1);
-                });
-                
-                if (threeWay.length > 20) {
-                    html += `<div class="no-result">외 ${threeWay.length - 20}건이 더 있습니다.</div>`;
+                    <h4>🔄 3인 순환 교체 ${h3title}</h4>
+                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">${h3desc}</p>`;
+                const list3 = isFiltered ? threeWay : threeWay.slice(0, 20);
+                list3.forEach((cycle, idx) => { html += renderCycleCard(cycle, idx + 1); });
+                if (!isFiltered && threeWay.length > 20) {
+                    html += `<div class="no-result">외 ${threeWay.length - 20}건이 더 있습니다. 위에서 요일·교시를 선택하면 해당 시간 기준의 결과를 전부 확인할 수 있습니다.</div>`;
                 }
                 html += `</div>`;
             }
-            
+
             if (fourWay.length > 0) {
+                const total4 = results.filter(r => r.type === 4).length;
+                const h4title = isFiltered ? '(' + fourWay.length + '건 해당)' : '(' + total4 + '건 발견)';
+                const h4desc = isFiltered
+                    ? '선택한 시간에 내 수업이 배치되는 4인 교체 <b>' + fourWay.length + '건</b>을 모두 표시합니다.'
+                    : '4명의 교사가 서로의 ' + targetClass + '반 수업을 순환하여 교체합니다.';
                 html += `<div class="result-section">
-                    <h4>🔄 4인 순환 교체 (${fourWay.length}건 발견)</h4>
-                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">4명의 교사가 서로의 ${targetClass}반 수업을 순환하여 교체합니다.</p>`;
-                
-                fourWay.slice(0, 15).forEach((cycle, idx) => {
-                    html += renderCycleCard(cycle, idx + 1);
-                });
-                
-                if (fourWay.length > 15) {
-                    html += `<div class="no-result">외 ${fourWay.length - 15}건이 더 있습니다.</div>`;
+                    <h4>🔄 4인 순환 교체 ${h4title}</h4>
+                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">${h4desc}</p>`;
+                const list4 = isFiltered ? fourWay : fourWay.slice(0, 15);
+                list4.forEach((cycle, idx) => { html += renderCycleCard(cycle, idx + 1); });
+                if (!isFiltered && fourWay.length > 15) {
+                    html += `<div class="no-result">외 ${fourWay.length - 15}건이 더 있습니다. 위에서 요일·교시를 선택하면 해당 시간 기준의 결과를 전부 확인할 수 있습니다.</div>`;
                 }
                 html += `</div>`;
             }
-            
+
+            if (threeWay.length === 0 && fourWay.length === 0) {
+                const msg = isFiltered
+                    ? '선택하신 요일·교시에 내 수업이 배치되는 순환 교체 경로가 없습니다.'
+                    : '동일 학반 조건을 만족하는 다자간 순환 교체 경로가 없습니다.';
+                html = `<div class="no-result">${msg}</div>`;
+            }
+
             container.innerHTML = html;
+        }
+
+        function applyMultiFilter(btn) {
+            const isActive = btn.classList.contains('active');
+            document.querySelectorAll('.multi-filter-btn').forEach(b => b.classList.remove('active'));
+            const clearBtn = document.getElementById('multi-filter-clear');
+            if (isActive) {
+                clearBtn.style.display = 'none';
+                renderFilteredResults(null);
+            } else {
+                btn.classList.add('active');
+                clearBtn.style.display = 'inline-block';
+                renderFilteredResults(btn.getAttribute('data-slot'));
+            }
+        }
+
+        function clearMultiFilter() {
+            document.querySelectorAll('.multi-filter-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('multi-filter-clear').style.display = 'none';
+            renderFilteredResults(null);
         }
         
         function renderCycleCard(cycle, number) {
@@ -593,18 +695,21 @@
                 <div class="cycle-flow">`;
             
             chain.forEach((step, i) => {
+                const len = chain.length;
+                const nextTeacher = chain[(i + 1) % len].teacher;
                 const ext = extNumbers[step.teacher] ? ` (📞${extNumbers[step.teacher]})` : '';
                 const cellClean = step.gives.cell.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ');
                 html += `<div class="cycle-step">
                     <div class="step-teacher">${step.teacher}${ext}</div>
-                    <div class="step-detail">${step.gives.day} ${step.gives.period + 1}교시</div>
+                    <div class="step-detail">${step.gives.day} ${step.gives.period + 1}교시 수업</div>
                     <div class="step-detail" style="font-size:11px; color:var(--subtle-text);">${cellClean}</div>
+                    <div class="step-next">→ ${nextTeacher} 담당</div>
                 </div>`;
                 html += `<span class="cycle-arrow">→</span>`;
             });
             
             // 마지막 화살표 뒤에 처음으로 돌아오는 표시
-            html += `<div class="cycle-step" style="border: 2px dashed var(--primary-color); background: var(--empty-bg);">
+            html += `<div class="cycle-step" style="border: 2px dashed var(--primary-color); background: var(--empty-bg); display:flex; flex-direction:column; align-items:center; justify-content:center;">
                 <div class="step-teacher">${chain[0].teacher}</div>
                 <div class="step-detail" style="color:var(--primary-color); font-weight:600;">↩ 순환 완료</div>
             </div>`;
@@ -612,11 +717,16 @@
             html += `</div>`; // cycle-flow
             
             // 요약
+            // chain[i].gives  = 내가 원래 맡고 있던 수업 슬롯 (내가 빠지는 곳)
+            // chain[i].receives = 내가 새로 들어가는 슬롯 (내가 가는 곳)
+            // 내 gives 슬롯에 들어오는 사람 = 다음 step의 teacher (chain[(i+1)%len])
             html += `<div class="cycle-summary"><b>📋 교체 방법:</b><br>`;
-            chain.forEach(step => {
-                const nextStep = chain.find(c => c.gives.day === step.receives.day && c.gives.period === step.receives.period);
-                const cellClean = step.gives.cell.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ');
-                html += `• <b>${step.teacher}</b> 선생님의 <b>${step.gives.day} ${step.gives.period + 1}교시</b> (${cellClean}) 수업을 → <b>${step.receives.from}</b> 선생님의 시간(${step.receives.day} ${step.receives.period + 1}교시)으로 이동<br>`;
+            chain.forEach((step, i) => {
+                const len = chain.length;
+                const nextTeacher = chain[(i + 1) % len].teacher; // 내 슬롯에 들어오는 사람
+                const givesClean = step.gives.cell.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ');
+                const receivesClean = step.receives.cell.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ');
+                html += `• <b>${step.teacher}</b>: <b>${step.gives.day} ${step.gives.period + 1}교시</b> (${givesClean})에 <b>${nextTeacher}</b> 선생님이 들어오고, 본인은 <b>${step.receives.day} ${step.receives.period + 1}교시</b> (${receivesClean})로 이동<br>`;
             });
             html += `</div>`;
             
