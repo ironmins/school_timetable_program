@@ -504,9 +504,10 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             if (m) {
                 isLoc = true;
                 const firstWord = m[1];
-                if (/^[A-Z]$/.test(firstWord)) isLoc = false;
-                if (/^[A-Z]_/.test(firstWord)) isLoc = false;
-                if (/^[A-Z][가-힣a-zA-Z]+/.test(firstWord)) isLoc = false;
+                if (/^[A-Z]$/.test(firstWord)) isLoc = false;           // 단독 알파벳: A
+                if (/^[A-Z]_/.test(firstWord)) isLoc = false;            // A_수업
+                if (/^[A-Z][0-9]/.test(firstWord)) isLoc = false;        // A1, A2, B1, B2 등
+                if (/^[A-Z][가-힣a-zA-Z]+/.test(firstWord)) isLoc = false; // A수업
             }
             
             if (m && isLoc) {
@@ -1037,18 +1038,36 @@ document.getElementById('generate-btn').addEventListener('click', function() {
             }
 
             if (isColoringEnabled) { 
+                // A_수업 패턴
                 const spMatch = subjectName.match(/^([A-Z])[\\s\\n]*_[\\s\\n]*([\\s\\S]+)$/);
                 if (spMatch) {
                     processedSubjectName = applyAlphabetTag(spMatch[1], spMatch[2]);
                     colorApplied = true;
                 }
+                // A1_수업, B2_수업 등 알파벳+숫자+언더바 패턴
+                if (!colorApplied) {
+                    const spNumMatch = subjectName.match(/^([A-Z][0-9]+)[\\s\\n]*_[\\s\\n]*([\\s\\S]+)$/);
+                    if (spNumMatch) {
+                        processedSubjectName = applyAlphabetTag(spNumMatch[1], spNumMatch[2]);
+                        colorApplied = true;
+                    }
+                }
             }
 
             if (isFormatBColoringEnabled && !colorApplied) {
+                // A수업 패턴
                 const formatBMatch = subjectName.match(/^([A-Z])[\\s\\n]*([가-힣a-zA-Z][\\s\\S]*)$/);
                 if (formatBMatch) {
                     processedSubjectName = applyAlphabetTag(formatBMatch[1], formatBMatch[2]);
                     colorApplied = true;
+                }
+                // A1수업, B2수업 등 알파벳+숫자+한글/영문 패턴
+                if (!colorApplied) {
+                    const formatBNumMatch = subjectName.match(/^([A-Z][0-9]+)[\\s\\n]*([가-힣a-zA-Z][\\s\\S]*)$/);
+                    if (formatBNumMatch) {
+                        processedSubjectName = applyAlphabetTag(formatBNumMatch[1], formatBNumMatch[2]);
+                        colorApplied = true;
+                    }
                 }
             }
 

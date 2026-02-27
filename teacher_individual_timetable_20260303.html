@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026학년도 전주고등학교 1학기 개인별 시간표 (임시)</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        :root { --primary-color: #48BB78; --primary-light: #9AE6B4; --background-color: #F0FFF4; --card-background: #FFFFFF; --text-color: #22543D; --subtle-text: #4A5568; --border-color: #C6F6D5; --empty-bg: #F7FAFC; --first-col-bg: #F0FFF4; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Pretendard', 'Noto Sans KR', sans-serif; margin: 0; padding: 20px; background-color: var(--background-color); color: var(--text-color); min-height: 100vh; }
+        #app-container { max-width: 1100px; margin: 20px auto; background-color: var(--card-background); padding: 40px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative;}
+        
+        h1 { display: flex; align-items: center; justify-content: center; color: var(--text-color); margin-bottom: 5px; text-align: center; font-size: 2em; font-weight: 800; gap: 15px; margin-top: 10px; }
+        .title-icon { height: 2.2em; max-width: 150px; object-fit: contain; border-radius: 8px; }
+        
+        .clock-container { margin: 30px auto 40px auto; background: var(--first-col-bg); padding: 8px 24px; border-radius: 20px; border: 1px solid var(--border-color); font-size: 15px; font-weight: 600; color: var(--text-color); display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: fit-content; }
+        .clock-icon { font-size: 18px; }
+
+        #search-section { background: var(--empty-bg); padding: 25px; border-radius: 12px; margin-bottom: 30px; }
+        .search-container { position: relative; max-width: 500px; margin: 0 auto; }
+        #teacher-search { width: 100%; padding: 15px 20px 15px 50px; border: 1px solid var(--border-color); border-radius: 12px; font-size: 16px; font-family: inherit; background-color: var(--card-background); color: var(--text-color); transition: all 0.2s; outline: none; box-sizing: border-box; }
+        #teacher-search:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--primary-light); }
+        .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--subtle-text); font-size: 20px; }
+        .autocomplete-dropdown { position: absolute; top: calc(100% + 5px); left: 0; right: 0; background: var(--card-background); border: 1px solid var(--border-color); border-radius: 12px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .autocomplete-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background-color 0.2s; color: var(--text-color); }
+        .autocomplete-item:hover, .autocomplete-item.selected { background-color: var(--primary-light); color: var(--card-background); }
+        .favorites-section { margin-top: 20px; text-align: center; }
+        .favorites-title { font-size: 14px; color: var(--subtle-text); margin-bottom: 12px; }
+        .favorite-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .favorite-chip { background: var(--border-color); color: var(--text-color); padding: 8px 14px; border-radius: 20px; font-size: 14px; cursor: pointer; border: none; font-weight: 500; font-family: inherit; transition: all 0.2s;}
+        .favorite-chip:hover { background: var(--primary-color); color: white; transform: translateY(-2px); }
+        .search-stats { text-align: center; margin: 15px 0; color: var(--subtle-text); font-size: 14px; }
+        
+        .ext-badge { background-color: #E2E8F0; color: #1E293B; font-size: 15px; padding: 4px 12px; border-radius: 20px; margin-left: 12px; vertical-align: middle; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+        
+        .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px 0; }
+        .teacher-info h2 { margin: 0; font-size: 1.8em; font-weight: 700; color: var(--text-color); display: flex; align-items: center;}
+        .teacher-actions { display: flex; gap: 10px; }
+        .action-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--border-color); background: var(--card-background); color: var(--text-color); border-radius: 8px; font-family: inherit; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+        .action-btn:hover { background: var(--primary-light); color: white; }
+        .action-btn.favorited { background: #ED8936; border-color: #ED8936; color: white; }
+        
+        .table-container { overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 20px 0; font-size: 15px; table-layout: fixed; }
+        th, td { border-bottom: 1px solid var(--border-color); padding: 18px 10px; text-align: center; vertical-align: middle; word-wrap: break-word; color: var(--text-color); }
+        thead th { color: var(--text-color); font-weight: 600; font-size: 14px; background-color: var(--card-background); }
+        td:first-child { font-weight: 600; background-color: var(--first-col-bg); }
+        
+        tbody td { border-right: 1px solid var(--border-color); background-color: var(--card-background); transition: background-color 0.2s; height: 85px; }
+        tbody td.clickable-cell { cursor: pointer; position: relative; }
+        tbody td.clickable-cell:hover { background-color: var(--empty-bg); box-shadow: inset 0 0 0 2px var(--primary-color); z-index: 10; }
+        tbody td.clickable-cell:hover::after { content: "🔄 교체/대체 찾기"; position: absolute; bottom: 5px; right: 5px; font-size: 10px; background: var(--primary-color); color: white; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        
+        tbody td.empty-period { background-color: var(--empty-bg); color: var(--subtle-text); opacity: 0.8; }
+        
+        .today-header { background-color: var(--primary-color) !important; color: white !important; }
+        .today-badge { font-size: 10px; background: white; color: var(--primary-color); padding: 2px 6px; border-radius: 10px; margin-left: 4px; vertical-align: top; font-weight: 800; display: inline-block;}
+        .today-cell { border-left: 2px solid var(--primary-color) !important; border-right: 2px solid var(--primary-color) !important; }
+        tr:last-child .today-cell { border-bottom: 2px solid var(--primary-color) !important; }
+
+        .subject-tag { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; color: white; font-weight: 700; font-size: 12px; margin-right: 8px; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
+        .location-chip { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: white; margin-right: 6px; margin-bottom: 2px; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .empty-state { text-align: center; padding: 80px 20px; }
+        .empty-state-icon { font-size: 5em; margin-bottom: 20px; opacity: 0.5; color: var(--primary-color); }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--card-background); width: 90%; max-width: 700px; max-height: 85vh; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalIn 0.3s ease-out; }
+        @keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--first-col-bg); }
+        .modal-header h3 { margin: 0; font-size: 1.2em; color: var(--text-color); display: flex; align-items: center; gap: 8px;}
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--subtle-text); padding: 0; line-height: 1; transition: color 0.2s; }
+        .close-btn:hover { color: var(--primary-color); }
+        .modal-body { padding: 25px; overflow-y: auto; background: var(--card-background); }
+        
+        .modal-tabs { display: flex; border-bottom: 2px solid var(--border-color); margin-bottom: 20px; }
+        .modal-tab { flex: 1; padding: 12px 16px; text-align: center; font-size: 14px; font-weight: 600; cursor: pointer; border: none; background: none; color: var(--subtle-text); transition: all 0.2s; font-family: inherit; position: relative; }
+        .modal-tab:hover { color: var(--text-color); background: var(--empty-bg); }
+        .modal-tab.active { color: var(--primary-color); }
+        .modal-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: var(--primary-color); border-radius: 2px 2px 0 0; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .result-section { margin-bottom: 25px; }
+        .result-section h4 { margin: 0 0 15px 0; color: var(--primary-color); font-size: 1.1em; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
+        .result-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+        .result-item { background: var(--empty-bg); padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; color: var(--text-color); }
+        .result-item strong { color: var(--primary-color); font-size: 15px; }
+        .result-item span { font-size: 12px; color: var(--subtle-text); display: block; margin-top: 4px; }
+        .no-result { color: var(--subtle-text); font-size: 14px; text-align: center; padding: 20px; background: var(--empty-bg); border-radius: 8px; }
+        .error-notice { background: #FFF5F5; border-left: 4px solid #FC8181; padding: 15px; margin-bottom: 20px; color: #C53030; font-size: 14px; border-radius: 4px; line-height: 1.5; }
+        .info-notice { background: #EBF8FF; border-left: 4px solid #63B3ED; padding: 15px; margin-bottom: 20px; color: #2B6CB0; font-size: 14px; border-radius: 4px; line-height: 1.5; }
+
+        .multi-filter-box { background: var(--first-col-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
+        .multi-filter-label { font-size: 13px; font-weight: 700; color: var(--text-color); margin-bottom: 10px; }
+        .multi-filter-slots { display: flex; flex-wrap: wrap; gap: 8px; }
+        .multi-filter-btn { padding: 6px 14px; border: 1.5px solid var(--border-color); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--card-background); color: var(--text-color); font-family: inherit; transition: all 0.18s; }
+        .multi-filter-btn:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--empty-bg); }
+        .multi-filter-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .multi-filter-clear { margin-top: 10px; padding: 4px 14px; border: none; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; background: #FC8181; color: white; font-family: inherit; transition: all 0.18s; }
+        .multi-filter-clear:hover { background: #F56565; }
+
+        .cycle-card { background: var(--empty-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; transition: all 0.2s; }
+        .cycle-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: var(--primary-color); }
+        .cycle-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .cycle-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary-color); color: white; font-size: 13px; font-weight: 700; }
+        .cycle-card-title { font-weight: 700; font-size: 15px; color: var(--text-color); }
+        .cycle-flow { display: flex; flex-wrap: nowrap; align-items: stretch; gap: 4px; }
+        .cycle-step { background: var(--card-background); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 6px; font-size: 12px; line-height: 1.4; text-align: center; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .cycle-step .step-teacher { font-weight: 700; color: var(--primary-color); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cycle-step .step-detail { color: var(--subtle-text); font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cycle-step .step-next { color: var(--primary-color); font-size: 10px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cycle-arrow { font-size: 14px; color: var(--primary-color); font-weight: 700; flex-shrink: 0; align-self: center; }
+        .cycle-summary { margin-top: 12px; font-size: 13px; color: var(--subtle-text); background: var(--card-background); padding: 10px 14px; border-radius: 8px; border: 1px dashed var(--border-color); line-height: 1.7; }
+
+        .loading-spinner { display: flex; align-items: center; justify-content: center; padding: 40px; gap: 12px; color: var(--subtle-text); font-size: 15px; }
+        .spinner { width: 24px; height: 24px; border: 3px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer-credit { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--subtle-text); font-size: 13px; line-height: 1.6; }
+        .footer-credit p { margin: 0; }
+
+        @media (max-width: 768px) {
+            #app-container { padding: 20px; margin-top: 10px; }
+            .clock-container { font-size: 13px; margin: 15px auto 25px auto; padding: 6px 16px; }
+            th:first-child, td:first-child { position: sticky; left: 0; background: var(--first-col-bg); z-index: 1; }
+            .result-list { grid-template-columns: 1fr; }
+            .cycle-flow { flex-direction: column; }
+            .cycle-arrow { transform: rotate(90deg); }
+            .modal-tabs { flex-wrap: wrap; }
+        }
+        @media print {
+            body { background: white; }
+            #app-container { box-shadow: none; padding: 0; }
+            #search-section, .teacher-actions, h1, .clock-container, .footer-credit { display: none; }
+            table { font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .today-cell { border: none !important; }
+            .today-header { background-color: var(--card-background) !important; color: var(--text-color) !important; }
+            .today-badge { display: none; }
+            tbody td.clickable-cell::after { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <h1>
+            📅
+            <span>2026학년도 전주고등학교 1학기 개인별 시간표 (임시)</span>
+        </h1>
+        
+        <div class="clock-container" id="real-time-clock"></div>
+        
+        <div id="search-section">
+            <div class="search-container">
+                <input type="text" id="teacher-search" placeholder="교사 이름을 입력하세요...">
+                <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+            </div>
+            <div class="search-stats" id="search-stats"></div>
+            <div class="favorites-section">
+                <div class="favorites-title">자주 찾는 교사</div>
+                <div class="favorite-chips" id="favorite-chips"></div>
+            </div>
+        </div>
+        <div id="schedule-container">
+            <div class="empty-state">
+                <div class="empty-state-icon">👨‍🏫</div>
+                <h3 style="color: var(--text-color);">시간표를 확인하고 싶은 교사를 검색해보세요</h3>
+            </div>
+        </div>
+
+        <div class="footer-credit">
+            <p>Last updated: 2026-02-27 17:17 (KST)</p>
+            <p>Made by IRONMIN (Jeonju high school)</p>
+        </div>
+    </div>
+
+    <div id="swap-modal" class="modal-overlay" onclick="if(event.target === this) closeSwapModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">🔄 수업 교체 및 보강 찾기</h3>
+                <button class="close-btn" onclick="closeSwapModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body-content"></div>
+        </div>
+    </div>
+    
+    <script>
+        const allSchedules = [{"name":"권민규","schedule":{"월":[null,"204\r\r\n문학","104\r\r\n국어",null,"103\r\r\n국어",null,"101\r\r\n자율"],"화":[null,"102\r\r\n국어","104\r\r\n국어",null,"101\r\r\n국어",null,null],"수":[null,"102\r\r\n국어","103\r\r\n국어",null,null,null,"동아리"],"목":["201\r\r\n문학",null,"101\r\r\n국어","102\r\r\n국어",null,null,"104\r\r\n국어"],"금":["103\r\r\n국어","101\r\r\n국어",null,"203\r\r\n문학",null,null,"202\r\r\n문학"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"임철준","schedule":{"월":["209\r\r\n문학","105\r\r\n국어",null,"211\r\r\n문학",null,null,"108\r\r\n자율"],"화":[null,"106\r\r\n국어","105\r\r\n국어",null,"107\r\r\n국어",null,"108\r\r\n국어"],"수":["106\r\r\n국어",null,"107\r\r\n국어","212\r\r\n화법",null,null,"동아리"],"목":["108\r\r\n국어",null,"107\r\r\n국어","210\r\r\n문학",null,null,"106\r\r\n국어"],"금":[null,null,null,null,"108\r\r\n국어","105\r\r\n국어",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김용훈","schedule":{"월":[null,null,"111\r\r\n국어","112\r\r\n국어",null,null,"110\r\r\n자율"],"화":["111\r\r\n국어","109\r\r\n국어",null,null,"205\r\r\n문학",null,"112\r\r\n국어"],"수":["109\r\r\n국어","110\r\r\n국어",null,"111\r\r\n국어",null,null,"동아리"],"목":[null,null,"110\r\r\n국어","207\r\r\n문학",null,null,"208\r\r\n문학"],"금":[null,"110\r\r\n국어",null,"206\r\r\n문학",null,"112\r\r\n국어","109\r\r\n국어"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박선우","schedule":{"월":["101\r\r\n국어","202\r\r\n문학",null,"201\r\r\n문학",null,null,"202\r\r\n자율"],"화":[null,"203\r\r\n문학","202\r\r\n문학",null,"204\r\r\n문학",null,"103\r\r\n국어"],"수":[null,null,"204\r\r\n문학","203\r\r\n문학","201\r\r\n문학",null,"동아리"],"목":["203\r\r\n문학",null,null,"202\r\r\n문학",null,null,"201\r\r\n문학"],"금":["102\r\r\n국어",null,null,"204\r\r\n문학","104\r\r\n국어",null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이모니카","schedule":{"월":["208\r\r\n문학",null,"110\r\r\n국어","205\r\r\n문학",null,null,"201\r\r\n자율"],"화":[null,"208\r\r\n문학","207\r\r\n문학",null,"206\r\r\n문학",null,null],"수":[null,null,"206\r\r\n문학","207\r\r\n문학","205\r\r\n문학",null,"동아리"],"목":["206\r\r\n문학",null,"109\r\r\n국어","208\r\r\n문학",null,null,"207\r\r\n문학"],"금":[null,null,null,"112\r\r\n국어",null,"111\r\r\n국어","205\r\r\n문학"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"홍화정","schedule":{"월":["106\r\r\n국어","107\r\r\n국어",null,"209\r\r\n문학",null,null,"203\r\r\n자율"],"화":[null,"210\r\r\n문학","212\r\r\n화법",null,"211\r\r\n문학",null,null],"수":["105\r\r\n국어",null,"210\r\r\n문학",null,"211\r\r\n문학",null,"동아리"],"목":["212\r\r\n화법","108\r\r\n국어",null,"209\r\r\n문학",null,null,"211\r\r\n문학"],"금":[null,"212\r\r\n화법",null,"209\r\r\n문학",null,null,"210\r\r\n문학"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"신주영","schedule":{"월":["304\r\r\n독서","312\r\r\n독서",null,null,"305\r\r\n독서",null,"304\r\r\n자율"],"화":["306\r\r\n독서",null,null,"305\r\r\n독서","304\r\r\n독서",null,null],"수":[null,"306\r\r\n독서","312\r\r\n독서",null,null,"304\r\n공강","동아리"],"목":[null,"304\r\r\n독서","306\r\r\n독서",null,"304\r\r\n진로","305\r\r\n독서",null],"금":["304\r\r\n공강","304\r\r\n독서","306\r\r\n독서",null,"305\r\r\n독서",null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박유정","schedule":{"월":["311\r\r\n독서",null,null,null,"309\r\r\n독서",null,"309\r\r\n자율"],"화":["311\r\r\n독서",null,"312\r\r\n공강","310\r\r\n독서","309\r\r\n독서",null,"306\r\r\nB_현문"],"수":[null,"310\r\r\n독서",null,null,null,"309\r\n공강","동아리"],"목":["306\r\r\nB_현문","309\r\r\n독서",null,null,"310\r\r\n독서","311\r\r\n독서",null],"금":[null,"309\r\r\n진로","310\r\r\n독서",null,"311\r\r\n독서",null,"309\r\r\n독서"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"곽선진","schedule":{"월":["308\r\r\n독서","306\r\nA1_고전",null,null,"306\r\r\n공강","108\r\n공강",null],"화":["307\r\r\n독서","303\r\nC1_고전",null,null,"308\r\r\n독서",null,"304\r\r\nB_고전"],"수":[null,"307\r\r\n독서",null,null,"207\r\r\n진로",null,"동아리"],"목":["304\r\r\nB_고전","307\r\r\n독서",null,"306\r\nA1_고전",null,"308\r\r\n독서","303\r\nC1_고전"],"금":[null,null,"301\r\r\n공강",null,"307\r\r\n독서",null,"308\r\r\n독서"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박누리","schedule":{"월":["303\r\r\n독서","308\r\nA2_고전",null,null,"301\r\r\n독서",null,null],"화":["301\r\r\n독서","304\r\nC2_고전",null,"303\r\r\n독서","302\r\r\n독서","308\r\nA2_고전",null],"수":[null,"302\r\r\n독서",null,null,null,null,"동아리"],"목":[null,"105\r\r\n진로","302\r\r\n독서",null,"303\r\r\n독서","301\r\r\n독서",null],"금":[null,"303\r\r\n독서","302\r\r\n독서",null,"301\r\r\n독서","304\r\nC2_고전",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박동욱","schedule":{"월":[null,null,"103\r\r\n수학","102\r\r\n수학",null,"101\r\r\n공강",null],"화":["104\r\r\n수학","101\r\r\n수학",null,"103\r\r\n수학","102\r\r\n수학",null,null],"수":["101\r\r\n수학","104\r\r\n수학",null,null,"103\r\n공강",null,"동아리"],"목":["101\r\r\n수학","102\r\r\n수학",null,null,"104\r\r\n수학",null,"103\r\r\n수학"],"금":[null,null,"102\r\r\n수학","101\r\r\n수학",null,"103\r\r\n수학","104\r\r\n수학"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"임보라","schedule":{"월":[null,null,"106\r\r\n수학","105\r\r\n수학",null,"107\r\n공강","107\r\r\n자율"],"화":[null,"107\r\r\n수학",null,null,null,"106\r\r\n수학","105\r\r\n수학"],"수":["107\r\r\n수학","107\r\r\n진로",null,"106\r\r\n진로","107\r\n공강","107\r\n공강","동아리"],"목":[null,null,"106\r\r\n수학",null,null,"105\r\r\n수학","107\r\r\n수학"],"금":["107\r\r\n수학",null,null,null,"105\r\r\n수학","106\r\r\n수학",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"정진우","schedule":{"월":["111\r\r\n수학",null,"108\r\r\n수학","110\r\r\n수학",null,"109\r\n공강","109\r\r\n자율"],"화":[null,"111\r\r\n수학","109\r\r\n수학",null,"110\r\r\n수학","108\r\r\n수학",null],"수":["108\r\r\n수학","109\r\r\n수학",null,"109\r\r\n수학",null,null,"동아리"],"목":[null,null,null,"110\r\r\n수학",null,null,"111\r\r\n수학"],"금":["110\r\r\n수학","108\r\r\n수학",null,"111\r\r\n수학","109\r\r\n수학",null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"임두리","schedule":{"월":[null,"212\r\r\n직수","204\r\nA1_미적",null,null,"208\r\nF2_미적",null],"화":[null,null,null,null,"202\r\r\n공강","112\r\r\n기수","208\r\nF2_미적"],"수":["204\r\nA1_미적",null,"112\r\r\n기수",null,"101\r\n공강","202\r\n공강","동아리"],"목":[null,null,"212\r\r\n직수","201\r\r\n진로",null,"112\r\r\n기수",null],"금":[null,"208\r\nF2_미적",null,"212\r\r\n직수",null,"204\r\nA1_미적","112\r\r\n기수"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김소영","schedule":{"월":[null,null,"203\r\nA1_대수",null,"205\r\nB1_대수",null,"205\r\r\n자율"],"화":["204\r\nE1_대수",null,null,"206\r\r\nC_대수",null,"207\r\nD1_대수",null],"수":["203\r\nA1_대수","205\r\nB1_대수",null,null,null,"206\r\n공강","동아리"],"목":[null,"204\r\nE1_대수","207\r\nD1_대수",null,"205\r\nB1_대수","206\r\r\nC_대수",null],"금":["207\r\nD1_대수",null,"204\r\nE1_대수",null,"206\r\r\nC_대수","203\r\nA1_대수","206\r\n공강"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김진실","schedule":{"월":[null,"208\r\r\n진로","205\r\nA2_대수",null,"206\r\nB2_대수","204\r\nF1_대수",null],"화":["208\r\nE2_대수",null,null,null,"203\r\r\n공강","203\r\nD2_대수","204\r\nF1_대수"],"수":["205\r\nA2_대수","206\r\nB2_대수",null,null,"108\r\n공강",null,"동아리"],"목":[null,"208\r\nE2_대수","203\r\nD2_대수",null,"206\r\nB2_대수",null,null],"금":["203\r\nD2_대수","204\r\nF1_대수","208\r\nE2_대수",null,null,"205\r\nA2_대수",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김혜진","schedule":{"월":[null,null,"206\r\nA2_미적",null,"208\r\nB2_미적","206\r\nF2_대수",null],"화":["205\r\nE2_미적",null,null,null,null,"209\r\nD2_미적","206\r\nF2_대수"],"수":["206\r\nA2_미적","208\r\nB2_미적",null,"209\r\r\n진로","208\r\r\n공강",null,"동아리"],"목":[null,"205\r\nE2_미적","209\r\nD2_미적",null,"208\r\nB2_미적",null,null],"금":["209\r\nD2_미적","206\r\nF2_대수","205\r\nE2_미적",null,null,"206\r\nA2_미적",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"인수","schedule":{"월":[null,null,null,null,"207\r\nB1_미적","209\r\nF1_미적","204\r\r\n자율"],"화":["206\r\nE1_미적",null,null,"204\r\r\nC_미적",null,"208\r\nD1_미적","209\r\nF1_미적"],"수":[null,"207\r\nB1_미적",null,null,null,"204\r\n공강","동아리"],"목":[null,"206\r\nE1_미적","208\r\nD1_미적",null,"207\r\nB1_미적","204\r\r\nC_미적",null],"금":["208\r\nD1_미적","209\r\nF1_미적","206\r\nE1_미적",null,"204\r\r\nC_미적",null,"204\r\n공강"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박근영","schedule":{"월":["302\r\r\nA_수통","209\r\r\n공강",null,null,"유벤투스\r\nF_수통",null,"306\r\r\n자율"],"화":["304\r\r\nB_수통",null,null,"308\r\r\nD_수통","306\r\r\nC_수통",null,null],"수":[null,"304\r\r\nB_수통",null,null,null,"306\r\n공강","동아리"],"목":[null,"302\r\r\nA_수통","310\r\r\nE_수통",null,"305\r\r\nC_수적","306\r\r\n진로",null],"금":["유벤투스\r\nF_수통","306\r\r\nC_수통","308\r\r\nD_수통",null,"310\r\r\nE_수통",null,"305\r\r\nC_수적"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박보라","schedule":{"월":["310\r\r\nE_수통",null,null,null,"308\r\r\nD_수통","103\r\r\n공강",null],"화":["310\r\r\nE_수통","104\r\n진로",null,"302\r\r\nA_수통","305\r\r\nC_수적",null,null],"수":[null,"유벤투스\r\nF_수통",null,null,null,null,"동아리"],"목":[null,"유벤투스\r\nF_수통","308\r\r\nD_수통",null,"306\r\r\nC_수통","304\r\r\nB_수통",null],"금":["302\r\r\nA_수통","305\r\r\nC_수적","304\r\r\nB_수통",null,"303\r\n공강",null,"306\r\r\nC_수통"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이익선","schedule":{"월":["301\r\r\nA_수적",null,null,null,"311\r\r\nF_수적",null,"303\r\r\n자율"],"화":["303\r\r\nB_수적","306\r\nC1_기하",null,"307\r\r\nD_수적",null,null,"307\r\r\nB_기하"],"수":["307\r\r\nB_기하","303\r\r\nB_수적",null,null,null,"303\r\n공강","동아리"],"목":[null,"301\r\r\nA_수적","309\r\r\nE_수적",null,null,null,"306\r\nC1_기하"],"금":["311\r\r\nF_수적",null,"307\r\r\nD_수적",null,"309\r\r\nE_수적","306공강\r\nC1_기하","303\r\r\n진로"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"전민상","schedule":{"월":["309\r\r\nE_수적","303\r\r\nA_기하",null,null,"307\r\r\nD_수적",null,"307\r\r\n자율"],"화":["309\r\r\nE_수적","307\r\nC2_기하",null,"301\r\r\nA_수적","307\r\r\n진로","303\r\r\nA_기하",null],"수":[null,"311\r\r\nF_수적",null,null,null,"307\r\n공강","동아리"],"목":[null,"311\r\r\nF_수적","307\r\r\nD_수적",null,"307\r\r\n공강","303\r\r\nB_수적","307\r\nC2_기하"],"금":["301\r\r\nA_수적",null,"303\r\r\nB_수적",null,null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"조장익","schedule":{"월":["312\r\r\n수2","도서관\r\nA_경수",null,null,null,"310\r\nA2_심리",null],"화":[null,null,null,"312\r\r\n심리",null,"도서관\r\nA_경수","311\r\r\nB_경수"],"수":["311\r\r\nB_경수",null,null,null,"310\r\nA2_심리",null,"동아리"],"목":[null,null,"312\r\r\n수2",null,null,null,null],"금":["312\r\r\n심리",null,null,null,null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"손혜리","schedule":{"월":["112\r\r\n기영","101\r\r\n영어",null,"103\r\r\n영어","102\r\r\n영어",null,null],"화":["103\r\r\n영어",null,"211\r\r\n영1",null,"209\r\r\n영1","102\r\r\n영어",null],"수":[null,"112\r\r\n기영",null,"101\r\r\n영어",null,"101\r\n공강","동아리"],"목":["103\r\r\n영어",null,null,null,"112\r\r\n기영",null,"101\r\r\n영어"],"금":[null,null,"112\r\r\n기영","210\r\r\n영1",null,null,"102\r\r\n영어"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"장효선","schedule":{"월":["206\r\r\n영1","104\r\r\n영어",null,"107\r\r\n영어",null,null,"106\r\r\n자율"],"화":[null,"207\r\r\n영1","107\r\r\n영어",null,"105\r\r\n영어",null,"106\r\r\n영어"],"수":[null,"106\r\r\n영어","205\r\r\n영1",null,null,null,"동아리"],"목":[null,"104\r\r\n영어",null,"107\r\r\n영어","105\r\r\n영어",null,null],"금":["105\r\r\n영어",null,"106\r\r\n영어","104\r\r\n영어",null,null,"208\r\r\n영1"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"조성희","schedule":{"월":[null,"110\r\r\n영어",null,"108\r\r\n영어",null,null,"111\r\r\n자율"],"화":["109\r\r\n영어","204\r\r\n영1",null,null,"201\r\r\n영1",null,"111\r\r\n영어"],"수":["111\r\r\n영어",null,"110\r\r\n영어",null,"203\r\r\n영1",null,"동아리"],"목":[null,null,"108\r\r\n영어","109\r\r\n영어",null,"111\r\r\n영어","110\r\r\n영어"],"금":["108\r\r\n영어","109\r\r\n영어",null,"202\r\r\n영1",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"강유진","schedule":{"월":["203\r\r\n영1","201\r\r\n영1",null,"204\r\r\n영1","109\r\r\n영어","110\r\n공강",null],"화":[null,"202\r\r\n영1","203\r\r\n영1",null,"108\r\r\n영어",null,null],"수":[null,null,"202\r\r\n영1","201\r\r\n영1","204\r\r\n영1",null,"동아리"],"목":["202\r\r\n영1",null,null,"203\r\r\n영1",null,"110\r\r\n영어","204\r\r\n영1"],"금":[null,"111\r\r\n영어",null,"201\r\r\n영1",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김창연","schedule":{"월":["205\r\r\n영1",null,"105\r\r\n영어","207\r\r\n영1",null,null,"206\r\r\n자율"],"화":[null,"205\r\r\n영1","206\r\r\n영1",null,"208\r\r\n영1",null,null],"수":[null,null,"207\r\r\n영1","208\r\r\n영1","206\r\r\n영1",null,"동아리"],"목":["208\r\r\n영1",null,"104\r\r\n영어","106\r\r\n영어",null,null,"206\r\r\n영1"],"금":[null,null,null,"205\r\r\n영1","107\r\r\n영어",null,"207\r\r\n영1"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김수진","schedule":{"월":[null,"210\r\r\n영1","212\r\r\n직영",null,null,null,"207\r\r\n자율"],"화":[null,null,"210\r\r\n영1","212\r\r\n직영",null,"101\r\r\n영어",null],"수":["212\r\r\n직영",null,"211\r\r\n영1","210\r\r\n영1","209\r\r\n영1",null,"동아리"],"목":["209\r\r\n영1",null,"102\r\r\n영어","211\r\r\n영1",null,null,"209\r\r\n영1"],"금":[null,null,null,"211\r\r\n영1","212\r\r\n직영",null,"103\r\r\n영어"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"임하진","schedule":{"월":["307\r\r\n영독","112\r\r\n진로",null,null,"303\r\r\n영독",null,null],"화":["305\r\r\n영독",null,null,"304\r\r\n영독","301\r\r\n영독",null,null],"수":[null,"301\r\r\n영독",null,null,null,"208\r\n공강","동아리"],"목":[null,"306\r\r\n영독","303\r\r\n영독",null,"302\r\r\n영독",null,"304공강\r\nC2_고전"],"금":["306\r\r\n영독","307\r\r\n영독","305\r\r\n영독",null,"302\r\r\n영독",null,"304\r\r\n영독"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"임지혜","schedule":{"월":["306\r\r\n영독",null,null,null,"302\r\r\n영독",null,"301\r\r\n자율"],"화":["302\r\r\n영독","312\r\r\n영2",null,"306\r\r\n영독","303\r\r\n영독",null,null],"수":["312\r\r\n영2","305\r\r\n영독",null,null,"109\r\n공강","301\r\n공강","동아리"],"목":[null,"305\r\r\n영독","304\r\r\n영독",null,"301\r\r\n영독",null,null],"금":["303\r\r\n영독","301\r\r\n진로",null,null,"304\r\r\n영독",null,"301\r\r\n영독"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"신세라","schedule":{"월":[null,null,"305\r\nB2_심리","310\r\r\nC_심리",null,null,"311\r\r\n자율"],"화":["308\r\r\n영독",null,"309\r\nD2_심리","311\r\r\n영독",null,null,null],"수":[null,"309\r\r\n영독","310\r\r\nC_심리","305\r\nB2_심리",null,"311\r\n공강","동아리"],"목":["311공강\r\nB_경수",null,"311\r\r\n영독",null,"309\r\r\n영독","310\r\r\n영독",null],"금":["310\r\r\n영독","308\r\r\n영독",null,"309\r\nD2_심리",null,null,"311\r\r\n진로"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박홍기","schedule":{"월":["210\r\r\n진로","206\r\n진로",null,null,"310\r\r\n영독",null,null],"화":[null,null,null,"309\r\r\n영독","310\r\r\n영독",null,"유벤투스\r\nB_심영"],"수":["유벤투스\r\nB_심영","308\r\r\n영독",null,null,null,"310\r\n공강","동아리"],"목":["유벤투스\r\nB_심영","308\r\r\n영독",null,null,"311\r\r\n영독","307\r\r\n영독",null],"금":["309\r\r\n영독","311\r\r\n영독",null,null,null,"307공강\r\nC2_기하","307\r\r\n영독"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"정경용","schedule":{"월":[null,null,"102\r\r\n한국사","101\r\r\n한국사",null,"105\r\n공강","105\r\r\n자율"],"화":["105\r\r\n한국사","103\r\r\n한국사",null,null,null,"104\r\r\n한국사",null],"수":[null,"105\r\r\n한국사",null,"104\r\r\n한국사",null,"105\r\n공강","동아리"],"목":["102\r\r\n한국사",null,null,"101\r\r\n한국사","103\r\r\n한국사",null,"105\r\r\n한국사"],"금":["104\r\r\n한국사","103\r\r\n한국사",null,null,null,"102\r\r\n한국사","101\r\r\n한국사"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이철민","schedule":{"월":[null,null,"201\r\r\nA_세계사",null,"106\r\r\n한국사","106\r\n공강",null],"화":["203\r\r\nE_세계사",null,"106\r\r\n한국사","208\r\r\nC_세계사",null,"107\r\r\n한국사",null],"수":["201\r\r\nA_세계사",null,null,"107\r\r\n한국사",null,"210\r\n공강","동아리"],"목":[null,"203\r\r\nE_세계사",null,null,"106\r\r\n한국사","208\r\r\nC_세계사",null],"금":[null,"107\r\r\n한국사","203\r\r\nE_세계사",null,"208\r\r\nC_세계사","201\r\r\nA_세계사",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이수일","schedule":{"월":[null,"311\r\r\nA_현대세계","109\r\r\n한국사",null,"108\r\r\n한국사",null,"302\r\r\n자율"],"화":[null,"310\r\nC_현대세계",null,"108\r\r\n한국사",null,"311\r\r\nA_현대세계","310\r\r\nB_현대세계"],"수":["310\r\r\nB_현대세계",null,null,null,null,null,"동아리"],"목":["310\r\r\nB_현대세계","109\r\r\n한국사",null,"311\r\r\nA_현대세계",null,"302\r\r\n진로","310\r\nC_현대세계"],"금":[null,null,"109\r\n한국사","108\r\n한국사",null,"310\r\nC_현대세계",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"노지슬","schedule":{"월":[null,null,null,null,null,null,null],"화":[null,"112\r\r\n한국사","110\r\r\n한국사",null,"111\r\r\n한국사",null,null],"수":[null,null,null,null,null,null,"동아리"],"목":["111\r\r\n한국사",null,null,"112\r\r\n한국사","110\r\r\n한국사",null,null],"금":["111\r\r\n한국사","112\r\r\n한국사","110\r\r\n한국사",null,null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"오서영","schedule":{"월":["107\r\r\n통합사회",null,null,"106\r\r\n통합사회",null,"104\r\n공강","104\r\r\n자율"],"화":[null,"105\r\r\n통합사회","103\r\r\n통합사회",null,null,null,"104\r\r\n통합사회"],"수":[null,null,"104\r\r\n통합사회","103\r\r\n통합사회",null,"104\r\n공강","동아리"],"목":["106\r\r\n통합사회",null,"105\r\r\n통합사회",null,"107\r\r\n통합사회","103\r\r\n통합사회",null],"금":[null,null,"107\r\r\n통합사회","105\r\r\n통합사회",null,"104\r\r\n통합사회","106\r\r\n통합사회"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이수지","schedule":{"월":["102\r\r\n통합사회","310\r\nA2_사문탐",null,null,null,null,"102\r\r\n자율"],"화":[null,"311\r\nC2_사문탐",null,"101\r\r\n통합사회",null,"310\r\nA2_사문탐","도서관\r\nB2_사문탐"],"수":["도서관\r\nB2_사문탐","101\r\r\n통합사회",null,"102\r\r\n통합사회",null,"102\r\n공강","동아리"],"목":["도서관\r\nB2_사문탐",null,null,"310\r\nA2_사문탐",null,"101\r\r\n통합사회","311\r\nC2_사문탐"],"금":[null,null,null,null,"102\r\r\n통합사회","311\r\nC2_사문탐",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김정원","schedule":{"월":["110\r\r\n통합사회",null,"303\r\r\nB_국제정치",null,"111\r\r\n통합사회","111\r\n공강",null],"화":[null,"108\r\r\n통합사회","301\r\r\nD_국제정치",null,"109\r\r\n통합사회",null,null],"수":[null,null,"111\r\r\n통합사회","303\r\r\nB_국제정치",null,null,"동아리"],"목":["110\r\r\n통합사회",null,"111\r\r\n통합사회",null,null,"109\r\r\n통합사회","108\r\r\n통합사회"],"금":["109\r\r\n통합사회",null,null,"301\r\r\nD_국제정치",null,"108\r\r\n통합사회","110\r\r\n통합사회"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이강대","schedule":{"월":[null,"109\r\r\n통합사회","112\r\r\n통합사회",null,"101\r\r\n통합사회","102\r\r\n공강",null],"화":["107\r\r\n통합사회",null,"111\r\r\n통합사회","110\r\r\n통합사회",null,null,null],"수":["104\r\r\n통합사회",null,"105\r\r\n통합사회",null,null,"111\r\n공강","동아리"],"목":["204\r\r\n공강","112\r\r\n통합사회",null,null,"102\r\r\n통합사회",null,"112\r\r\n통합사회"],"금":[null,"106\r\r\n통합사회",null,"103\r\r\n통합사회","112\r\r\n통합사회",null,"108\r\r\n통합사회"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"고경수","schedule":{"월":[null,null,"202\r\r\nA_현윤","312\r\r\n고윤",null,"201\r\r\nF_현윤",null],"화":["209\r\r\nE_현윤",null,"201\r\r\n공강","211\r\r\nC_현윤",null,null,"201\r\r\nF_현윤"],"수":["202\r\r\nA_현윤",null,null,"202\r\r\n진로",null,"207\r\n공강","동아리"],"목":["312\r\r\n고윤","209\r\r\nE_현윤",null,null,null,"211\r\r\nC_현윤",null],"금":[null,"201\r\r\nF_현윤","209\r\r\nE_현윤",null,"211\r\r\nC_현윤","202\r\r\nA_현윤",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"최원혁","schedule":{"월":["212\r\r\n기세",null,"302\r\nB2_여행","301\r\nC2_여행",null,"303\r\nA2_여행","210\r\r\n자율"],"화":["202\r\r\nE_세지","212\r\r\n기세",null,"201\r\r\nC_세지",null,null,null],"수":[null,null,"301\r\nC2_여행","302\r\nB2_여행","303\r\nA2_여행","203\r\n공강","동아리"],"목":[null,"202\r\r\nE_세지",null,null,null,"201\r\r\nC_세지",null],"금":["212\r\r\n기세",null,"202\r\r\nE_세지",null,"201\r\r\nC_세지",null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이지원","schedule":{"월":[null,"307\r\nA1_사회문화",null,null,null,null,"209\r\r\n자율"],"화":["201\r\r\nE_정치","309\r\nC1_사회문화",null,"202\r\r\nC_정치",null,"307\r\nA1_사회문화","다음씨\r\nB1_사회문화"],"수":["다음씨\r\nB1_사회문화",null,null,null,null,"209\r\n공강","동아리"],"목":["다음씨\r\nB1_사회문화","201\r\r\nE_정치",null,"307\r\nA1_사회문화",null,"202\r\r\nC_정치","309\r\nC1_사회문화"],"금":[null,null,"201\r\r\nE_정치",null,"202\r\r\nC_정치","309\r\nC1_사회문화",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김혜민","schedule":{"월":["201\r\n공강",null,null,null,"201\r\r\nB_사회문화","210\r\r\nF_사회문화","208\r\r\n자율"],"화":["211\r\r\nE_사회문화",null,null,"203\r\r\nC_사회문화",null,"205\r\r\nD_사회문화","210\r\r\nF_사회문화"],"수":[null,"201\r\r\nB_사회문화",null,null,null,"201\r\n공강","동아리"],"목":[null,"211\r\r\nE_사회문화","205\r\r\nD_사회문화",null,"201\r\r\nB_사회문화","203\r\r\nC_사회문화",null],"금":["205\r\r\nD_사회문화","210\r\r\nF_사회문화","211\r\r\nE_사회문화",null,"203\r\r\nC_사회문화",null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"임영아","schedule":{"월":[null,"309\r\r\nA_윤사",null,null,null,"301\r\r\nA_고윤","308\r\r\n자율"],"화":[null,"308\r\r\nC_윤사","302\r\r\nD_고윤",null,null,"309\r\r\nA_윤사","309\r\nB_윤사"],"수":["309\r\nB_윤사",null,"203\r\r\n공강",null,"301\r\r\nA_고윤","308\r\n공강","동아리"],"목":["309\r\nB_윤사",null,null,"309\r\r\nA_윤사",null,null,"308\r\r\nC_윤사"],"금":["308\r\r\n공강",null,null,"302\r\r\nD_고윤","308\r\r\n진로","308\r\r\nC_윤사",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박세희","schedule":{"월":[null,"304\r\r\nA_지역","301\r\nB1_여행","303\r\nC1_여행",null,"302\r\nA1_여행","305\r\r\n자율"],"화":[null,"다음씨\r\nC_지역",null,null,null,"304\r\r\nA_지역","305\r\r\nB_지역"],"수":["305\r\r\nB_지역",null,"303\r\nC1_여행","301\r\nB1_여행","302\r\nA1_여행",null,"동아리"],"목":["305\r\r\nB_지역",null,"305\r\r\n진로","304\r\r\nA_지역",null,null,"다음씨\r\nC_지역"],"금":[null,null,null,null,null,"다음씨\r\nC_지역",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이요한","schedule":{"월":[null,null,"307\r\r\nB_생태",null,"105\r\r\n통합과학","306\r\nA1_생태",null],"화":[null,null,null,"106\r\r\n통합과학","104\r\r\n통합과학",null,null],"수":[null,null,null,"307\r\r\nB_생태","306\r\nA1_생태",null,"동아리"],"목":[null,null,null,"303공강\r\nA_기하","101\r\r\n통합과학",null,null],"금":[null,null,"103\r\r\n통합과학","102\r\r\n통합과학",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"오태웅","schedule":{"월":["103\r\r\n통합과학","102\r\r\n통합과학",null,"307\r\r\nC_생태","112\r\r\n통합과학",null,"112\r\r\n자율"],"화":[null,null,"305\r\nD2_생태",null,"106\r\r\n통합과학",null,"101\r\r\n통합과학"],"수":[null,null,"307\r\r\nC_생태","105\r\r\n통합과학",null,null,"동아리"],"목":["107\r\r\n통합과학","110\r\r\n통합과학",null,"108\r\r\n통합과학",null,"104\r\r\n통합과학",null],"금":[null,null,"111\r\r\n통합과학","305\r\nD2_생태",null,"109\r\r\n통합과학",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"장은혜","schedule":{"월":[null,"108\r\r\n통합과학","101\r\r\n통합과학",null,"107\r\r\n통합과학","309\r\nA2_생태","103\r\r\n자율"],"화":[null,null,"304\r\nD1_생태","105\r\r\n통합과학",null,"110\r\r\n통합과학","102\r\r\n통합과학"],"수":["112\r\r\n통합과학","103\r\r\n통합과학",null,null,"309\r\nA2_생태",null,"동아리"],"목":[null,"111\r\r\n통합과학",null,null,"109\r\r\n통합과학",null,null],"금":["106\r\r\n통합과학",null,"104\r\r\n통합과학","304\r\nD1_생태",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김준원","schedule":{"월":["104\r\r\n통합과학","111\r\r\n통합과학",null,"109\r\r\n통합과학",null,null,null],"화":["108\r\r\n통합과학",null,null,"102\r\r\n통합과학","112\r\n통합과학",null,null],"수":["304공강\r\nB1_고전",null,"106\r\r\n통합과학","110\r\r\n통합과학",null,"109\r\n공강","동아리"],"목":[null,null,null,"103\r\r\n통합과학",null,null,null],"금":[null,null,"101\r\r\n통합과학","107\r\r\n통합과학",null,null,"105\r\r\n통합과학"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"전웅현","schedule":{"월":[null,null,null,null,"202\r\r\nB_지구과학",null,"211\r\r\n자율"],"화":["106\r\r\n과탐실",null,"108\r\r\n과탐실","104\r\r\n과탐실",null,"204\r\r\nD_지구과학","107\r\r\n과탐실"],"수":[null,"202\r\r\nB_지구과학","109\r\r\n과탐실",null,null,"205\r\n공강","동아리"],"목":["105\r\r\n과탐실","101\r\r\n과탐실","204\r\r\nD_지구과학",null,"202\r\r\nB_지구과학",null,null],"금":["204\r\r\nD_지구과학","102\r\r\n과탐실",null,null,"103\r\r\n과탐실",null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이보현","schedule":{"월":[null,null,"209\r\nA_물리학",null,"204\r\r\nB_물리학","203\r\r\nF_물리학",null],"화":[null,null,null,"205\r\r\nC_물리학",null,"206\r\r\nD_물리학","203\r\r\nF_물리학"],"수":["209\r\nA_물리학","204\r\r\nB_물리학",null,null,"210\r\n공강","211\r\n공강","동아리"],"목":[null,null,"206\r\r\nD_물리학",null,"204\r\r\nB_물리학","205\r\r\nC_물리학","203\r\r\n진로"],"금":["206\r\r\nD_물리학","203\r\r\nF_물리학",null,null,"205\r\r\nC_물리학","209\r\nA_물리학",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이복민","schedule":{"월":[null,null,"208\r\r\nA_화학",null,"203\r\r\nB_화학","205\r\r\nF_화학",null],"화":["210\r\r\nE_화학","211\r\r\n공강",null,"210\r\nC_화학",null,null,"205\r\r\nF_화학"],"수":["208\r\r\nA_화학","203\r\r\nB_화학",null,"204\r\r\n진로","102\r\n공강",null,"동아리"],"목":[null,"210\r\r\nE_화학",null,null,"203\r\r\nB_화학","210\r\nC_화학",null],"금":[null,"205\r\r\nF_화학","210\r\r\nE_화학",null,"210\r\nC_화학","208\r\r\nA_화학",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"한미희","schedule":{"월":[null,null,"207\r\nA_생명과학",null,"212\r\r\n공강","207\r\nF_생명과학",null],"화":[null,null,null,"207\r\nC_생명과학","212\r\r\n공강","202\r\r\nD_생명과학","207\r\nF_생명과학"],"수":["207\r\nA_생명과학","212\r\r\n기생",null,null,"212\r\r\n기생",null,"동아리"],"목":[null,null,"202\r\r\nD_생명과학","212\r\r\n기생",null,"207\r\nC_생명과학",null],"금":["202\r\r\nD_생명과학","207\r\nF_생명과학",null,null,"207\r\nC_생명과학","207\r\nA_생명과학",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이규연","schedule":{"월":[null,"301\r\r\nA_물2",null,"302\r\r\nC_고물",null,"308\r\r\nA_고물",null],"화":[null,"302\r\r\nC_물2","303\r\r\nD_고물",null,null,"301\r\r\nA_물2","303\r\r\nB_물2"],"수":["303\r\r\nB_물2",null,"302\r\r\nC_고물",null,"308\r\r\nA_고물","302\r\n공강","동아리"],"목":["303\r\r\nB_물2",null,null,"301\r\r\nA_물2",null,null,"302\r\r\nC_물2"],"금":[null,null,"311\r\r\n공강","303\r\r\nD_고물",null,"302\r\r\nC_물2",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박용호","schedule":{"월":[null,"유벤투스\r\nA_화2","304\r\r\nB_고화",null,null,"307\r\r\nA_고화","310\r\r\n자율"],"화":[null,"301\r\r\nC_화2","310\r\nD_고화",null,null,"유벤투스\r\nA_화2","302\r\r\nB_화2"],"수":["302\r\r\nB_화2",null,null,"304\r\r\nB_고화","307\r\r\nA_고화",null,"동아리"],"목":["302\r\r\nB_화2","310\r\r\n진로",null,"유벤투스\r\nA_화2",null,null,"301\r\r\nC_화2"],"금":[null,null,null,"310\r\nD_고화",null,"301\r\r\nC_화2",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"소재림","schedule":{"월":[null,"302\r\r\nA_생2","308\r\r\nB_고생","305\r\r\nC_고생",null,"304\r\r\nA_고생",null],"화":[null,"305\r\r\nC_생2",null,null,null,"302\r\r\nA_생2","301\r\r\nB_생2"],"수":["301\r\r\nB_생2",null,"305\r\r\nC_고생","308\r\r\nB_고생","304\r\r\nA_고생",null,"동아리"],"목":["301\r\r\nB_생2",null,null,"302\r\r\nA_생2",null,null,"305\r\r\nC_생2"],"금":[null,null,"309\r\r\n공강",null,null,"305\r\r\nC_생2","206\r\r\n공강"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"강소라","schedule":{"월":[null,"305\r\r\nA_지2",null,"304\r\r\nC_고지",null,"305\r\r\nA_고지",null],"화":[null,"도서관\r\nC_지2","308\r\r\nD_고지",null,null,"305\r\r\nA_지2","308\r\r\nB_지2"],"수":["308\r\r\nB_지2",null,"304\r\r\nC_고지",null,"305\r\r\nA_고지",null,"동아리"],"목":["308\r\r\nB_지2",null,null,"305\r\r\nA_지2",null,null,"도서관\r\nC_지2"],"금":[null,"302\r\r\n공강",null,"308\r\r\nD_고지",null,"도서관\r\nC_지2","310\r\r\n공강"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이선아","schedule":{"월":[null,null,null,null,null,null,null],"화":["112\r\r\n과탐실","110\r\r\n과탐실",null,"111\r\r\n과탐실",null,"111\r\r\n통합과학",null],"수":[null,null,null,null,null,null,"동아리"],"목":[null,null,null,null,null,"107\r\r\n통합과학","109\r\r\n통합과학"],"금":["112\r\r\n통합과학",null,"108\r\r\n통합과학","110\r\r\n통합과학",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"오종현","schedule":{"월":[null,null,"컴퓨터실\r\nA_정보","컴퓨터실\r\nC_정과","컴퓨터실\r\nB1_정보","컴퓨터실\r\nF_정보",null],"화":[null,null,null,"컴퓨터실\r\nC_정보",null,"컴퓨터실\r\nD2_정보","컴퓨터실\r\nF_정보"],"수":["컴퓨터실\r\nA_정보","컴퓨터실\r\nB1_정보","컴퓨터실\r\nC_정과",null,null,null,"동아리"],"목":[null,null,"컴퓨터실\r\nD2_정보",null,"컴퓨터실\r\nB1_정보","컴퓨터실\r\nC_정보",null],"금":["컴퓨터실\r\nD2_정보","컴퓨터실\r\nF_정보",null,null,"컴퓨터실\r\nC_정보","컴퓨터실\r\nA_정보",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"온재근","schedule":{"월":[null,null,"다음씨\r\nB_인지","다음씨\r\nC_인지","211\r\nB2_정보","다음씨\r\nA_인지",null],"화":["205\r\r\nE_정보",null,"다음씨\r\nD_인지",null,null,"다음에이\r\nD1_정보",null],"수":[null,"211\r\nB2_정보","다음씨\r\nC_인지","다음씨\r\nB_인지","다음씨\r\nA_인지",null,"동아리"],"목":[null,"205\r\r\nE_정보","다음에이\r\nD1_정보",null,"다음에이\r\nB2_정보",null,null],"금":["다음에이\r\nD1_정보",null,"205\r\r\nE_정보","다음씨\r\nD_인지",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이보연","schedule":{"월":[null,null,"309\r\r\nB_공학","308\r\nC_공학",null,"도서관\r\nA_공학",null],"화":[null,null,null,null,null,null,null],"수":[null,null,"308\r\nC_공학","309\r\nB_공학","도서관\r\nA_공학",null,"동아리"],"목":[null,null,null,null,null,null,null],"금":[null,null,null,null,null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"양미옥","schedule":{"월":["105\r\r\n미술",null,null,"104\r\r\n미술","104\r\r\n미술",null,null],"화":["101\r\r\n미술",null,null,null,"103\r\r\n미술","103\r\r\n미술",null],"수":[null,null,"102\r\r\n미술",null,null,"103\r\n공강","동아리"],"목":["104\r\r\n미술","103\r\r\n미술",null,"205\r\r\n공강",null,"102\r\r\n미술","102\r\r\n미술"],"금":[null,"105\r\r\n미술","105\r\r\n미술",null,"101\r\r\n미술","101\r\r\n미술","111\r\r\n진로"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"강상희","schedule":{"월":["211\r\r\n미창","207\r\r\n미창",null,"212\r\r\n미창",null,null,null],"화":[null,"209\r\r\n미창","208\r\r\n미창",null,"210\r\r\n미창",null,null],"수":["306공강\r\nB_현문",null,"208\r\r\n미창","211\r\r\n미창","106\r\n공강",null,"동아리"],"목":["207\r\r\n미창",null,null,null,"212\r\r\n미창","106\r\r\n미술","210\r\r\n미창"],"금":[null,null,null,"106\r\r\n미술","106\r\r\n미술",null,"209\r\r\n미창"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"백푸름","schedule":{"월":["204\r\r\n음창","205\r\r\n음창",null,"206\r\r\n음창",null,null,null],"화":[null,null,"204\r\r\n음창",null,null,"109\r\r\n음악","109\r\r\n음악"],"수":[null,null,"108\r\r\n음악","206\r\r\n음창",null,"108\r\n공강","동아리"],"목":["109\r\r\n음악","107\r\r\n음악",null,"313공강\r\nA_경수","108\r\r\n음악","108\r\r\n음악","205\r\r\n음창"],"금":[null,null,null,null,null,"107\r\r\n음악","107\r\r\n음악"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김한결","schedule":{"월":[null,"203\r\r\n음창","312\r\n공강","202\r\r\n음창",null,null,null],"화":[null,"201\r\r\n음창","112\r\r\n음악","112\r\r\n음악",null,null,null],"수":["110\r\r\n음악","111\r\r\n음악","201\r\r\n음창",null,"202\r\r\n음창",null,"동아리"],"목":["112\r\n음악",null,null,"111\r\r\n음악","111\r\r\n음악",null,null],"금":[null,null,null,"207\r\r\n공강","110\r\r\n음악","110\r\r\n음악","203\r\r\n음창"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"신애선","schedule":{"월":[null,null,"210\r\r\nA_중국어","208\r\r\n공강",null,"211\r\r\nF_중국어",null],"화":["212\r\r\n중국어",null,null,"209\r\r\nC_중국어",null,"201\r\r\nD_중국어","211\r\r\nF_중국어"],"수":["210\r\r\nA_중국어",null,"212\r\r\n중국어","108\r\r\n진로",null,null,"동아리"],"목":[null,"212\r\r\n중국어","201\r\nD_중국어","308공강\r\nA2_고전",null,"209\r\r\nC_중국어",null],"금":["201\r\r\nD_중국어","211\r\r\nF_중국어",null,null,"209\r\r\nC_중국어","210\r\r\nA_중국어",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"전나라","schedule":{"월":["202\r\r\n공강",null,"다음에이\r\nA_일본어",null,null,"다음비\r\nA_일2",null],"화":["다음에이\r\nE_일본어",null,"다음비\r\nD_일2","다음에이\r\nC_일본어",null,"다음비\r\nD_일본어","다음비\r\nF_일본어"],"수":["다음에이\r\nA_일본어",null,null,null,"104\r\n공강",null,"동아리"],"목":[null,"다음에이\r\nE_일본어","다음비\r\nD_일본어",null,"다음비\r\nB_일본어","다음에이\r\nC_일본어",null],"금":["다음비\r\nD_일본어",null,"다음에이\r\nE_일본어",null,"다음에이\r\nC_일본어","다음에이\r\nA_일본어",null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이아시","schedule":{"월":[null,null,"310\r\r\nB_일2","306\r\r\nC_일2","209\r\r\nB_일본어","206\r\r\nF_일본어",null],"화":[null,null,null,null,null,null,null],"수":[null,"209\r\r\nB_일본어","306\r\r\nC_일2","310\r\r\nB_일2","313\r\r\nA_일2",null,"동아리"],"목":[null,null,null,null,null,null,null],"금":[null,"206\r\r\nF_일본어",null,"311\r\r\nD_일2",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"박금란","schedule":{"월":[null,null,"311\r\nB1_심리","309\r\nC1_심리",null,null,null],"화":[null,null,"306\r\nD1_심리",null,null,null,null],"수":[null,null,"309\r\nC1_심리","311\r\nB1_심리",null,null,"동아리"],"목":["211\r\r\n진로",null,null,null,null,null,null],"금":[null,null,null,"306\r\nD1_심리",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이다은","schedule":{"월":[null,null,"도서관\r\nB_교육","도서관\r\nC_교육",null,null,null],"화":[null,null,"도서관\r\nD_교육",null,null,null,null],"수":[null,null,"도서관\r\nC_교육","도서관\r\nB_교육","111\r\n공강",null,"동아리"],"목":[null,null,"103\r\r\n진로",null,null,null,null],"금":[null,null,null,"도서관\r\nD_교육",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이효정","schedule":{"월":[null,null,"306\r\r\nB_보건","210\r\r\n공강",null,null,null],"화":[null,null,null,null,null,null,"110\r\r\n진로"],"수":[null,null,null,"306\r\r\nB_보건",null,null,"동아리"],"목":[null,null,null,null,null,null,null],"금":[null,null,null,null,null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"이슬비","schedule":{"월":["109\r\r\n진로",null,null,null,null,null,null],"화":["312\r\r\n보건",null,"307\r\r\nD_보건",null,null,null,null],"수":[null,null,null,null,"112\r\n공강",null,"동아리"],"목":[null,"312\r\r\n보건",null,null,null,null,null],"금":[null,null,null,"307\r\r\nD_보건",null,null,null]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김충희","schedule":{"월":["108\r\r\n체육","103\r\r\n체육","107\r\r\n체육","111\r\r\n체육",null,null,null],"화":["110\r\r\n체육",null,"102\r\r\n진로","109\r\r\n체육",null,null,null],"수":["102\r\r\n체육",null,"101\r\r\n체육","112\r\r\n체육",null,"106 \r\n공강","동아리"],"목":["307공강\r\nB_기하","106\r\r\n체육",null,"105\r\r\n체육",null,null,null],"금":["305\r\r\n공강","104\r\r\n체육",null,null,"312\r\r\n단체",null,"312\r\r\n단체"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"김한솔","schedule":{"월":[null,"106\r\r\n체육",null,null,"110\r\r\n체육",null,null],"화":["102\r\r\n체육",null,"101\r\r\n진로","107\r\r\n체육",null,"105\r\r\n체육",null],"수":["103\r\r\n체육","108\r\r\n체육",null,null,"105\r\n공강","110\r\n공강","동아리"],"목":[null,null,"112\r\r\n체육","104\r\r\n체육",null,"312\r\r\n단체",null],"금":["101\r\r\n체육",null,null,"109\r\r\n체육","111\r\r\n체육","312\r\r\n단체","211\r\r\n공강"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"임진욱","schedule":{"월":["207\r\r\n공강",null,null,"203\r\r\n스문",null,"312\r\r\n스실",null],"화":[null,null,"209\r\r\n공강",null,"207\r\r\n스문","212\r\r\n운건","212\r\r\n운건"],"수":[null,"312\r\r\n스실","209\r\r\n스문",null,null,null,"동아리"],"목":["205\r\r\n진로",null,null,"206\r\r\n공강",null,"212\r\r\n운건","202\r\r\n스문"],"금":[null,"312\r\r\n스실","312\r\r\n스실","208\r\r\n스문",null,"303공강\r\nC1_고전","201\r\r\n스문"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"최광현","schedule":{"월":[null,"211\r\r\n스문",null,null,"312\r\r\n체실","212\r\r\n스문","212\r\r\n자율"],"화":[null,"206\r\r\n스문","205\r\r\n스문",null,"312\r\r\n스체","306공강\r\nA_고전","312\r\r\n체실"],"수":[null,null,null,null,"110\r\n공강",null,"동아리"],"목":["210\r\r\n스문",null,null,"204\r\r\n스문","312\r\r\n체실",null,"212\r\r\n진로"],"금":[null,null,"212\r\r\n심체","312\r\r\n체실",null,"212\r\r\n심체","212\r\r\n심체"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]},{"name":"소정원","schedule":{"월":["305\r\r\n스생",null,null,null,"304\r\r\n스생",null,"312\r\r\n자율"],"화":[null,null,null,null,"311\r\r\n스생","312\r\r\n체진",null],"수":[null,null,null,"312\r\r\n체진","312\r\r\n체진","305\r\n공강","동아리"],"목":[null,"303\r\r\n스생","301\r\r\n스생","312\r\n진로","308\r\r\n스생","309\r\r\n스생","312\r\r\n체진"],"금":["307\r\r\n스생","310\r\r\n스생",null,null,"306\r\r\n스생",null,"302\r\r\n스생"]},"maxPeriods":7,"periodCounts":[7,7,7,7,7]}];
+        const extNumbers = {};
+        const bellSchedule = {"1":"8:30 ~ 9:20","2":"9:30 ~ 10:20","3":"10:30 ~ 11:20","4":"11:30 ~ 12:20","5":"13:30 ~ 14:20","6":"14:30 ~ 15:20","7":"15:30 ~ 16:20"};
+        
+        const isColoringEnabled = true;
+        const isFormatBColoringEnabled = true;
+        const isLineBreakEnabled = true;
+        const isLocationChipEnabled = true;
+
+        const teacherSearchInput = document.getElementById('teacher-search');
+        const autocompleteDropdown = document.getElementById('autocomplete-dropdown');
+        const scheduleContainer = document.getElementById('schedule-container');
+        const searchStats = document.getElementById('search-stats');
+        const favoriteChips = document.getElementById('favorite-chips');
+
+        let filteredTeachers = [...allSchedules];
+        let selectedIndex = -1;
+        let favorites = JSON.parse(localStorage.getItem('favTeachers') || '[]');
+
+        // 교사명 -> 데이터 빠른 조회용 맵
+        const teacherMap = {};
+        allSchedules.forEach(t => { teacherMap[t.name] = t; });
+
+        function updateClock() {
+            const now = new Date();
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]})`;
+            const timeStr = now.toLocaleTimeString('ko-KR', { hour12: false });
+            document.getElementById('real-time-clock').innerHTML = `<span class="clock-icon">🕒</span> ${dateStr} &nbsp;<b>${timeStr}</b>`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function stringToHslColor(str, s, l) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
+            return 'hsl(' + (hash % 360) + ', ' + s + '%, ' + l + '%)';
+        }
+
+        function parseCellData(rawCellData) {
+            if (!rawCellData) return { location: '', subjectName: '', hasAlphabet: false };
+            let str = rawCellData.toString().replace(/_x000D_/g, '').trim();
+            let loc = '';
+            let subj = str;
+            
+            const m = str.match(/^(\S+)\s+([\s\S]+)$/);
+            let isLoc = false;
+            
+            if (m) {
+                isLoc = true;
+                const firstWord = m[1];
+                if (/^[A-Z]$/.test(firstWord)) isLoc = false;           // 단독 알파벳: A
+                if (/^[A-Z]_/.test(firstWord)) isLoc = false;            // A_수업
+                if (/^[A-Z][0-9]/.test(firstWord)) isLoc = false;        // A1, A2, B1, B2 등
+                if (/^[A-Z][가-힣a-zA-Z]+/.test(firstWord)) isLoc = false; // A수업
+            }
+            
+            if (m && isLoc) {
+                loc = m[1].trim();
+                subj = m[2].trim();
+            }
+            
+            const hasAlpha = /[a-zA-Z]/.test(subj);
+            return { location: loc, subjectName: subj, hasAlphabet: hasAlpha };
+        }
+
+        function isFree(teacherData, day, periodIndex) {
+            const cell = teacherData.schedule[day][periodIndex];
+            if (!cell || cell === null || cell.toString().trim() === '') return true;
+            if (cell.includes('공강')) return true;
+            return false;
+        }
+
+        // ==========================================
+        // 다자간 순환 교체 탐색 엔진
+        // ==========================================
+        
+        /**
+         * 슬롯(slot) = { day: '월', period: 0 } (period는 0-based index)
+         * 
+         * 3인 순환 교체 조건:
+         *   나(A)의 targetSlot 수업을 B가 대신 → B는 targetSlot에 비어있어야 함
+         *   B의 어떤 슬롯(slotB)의 수업을 C가 대신 → C는 slotB에 비어있어야 함
+         *   C의 어떤 슬롯(slotC)의 수업을 A가 대신 → A는 slotC에 비어있어야 함
+         *   + 같은 학반(location) 조건: A의 targetSlot 학반 = B의 slotB 학반 = C의 slotC 학반
+         * 
+         * 4인도 동일 패턴으로 확장
+         */
+        
+        function findMultiSwapCycles(targetTeacherName, targetDay, targetPeriodIndex, maxDepth) {
+            const targetTeacher = teacherMap[targetTeacherName];
+            if (!targetTeacher) return [];
+            
+            const targetCell = targetTeacher.schedule[targetDay][targetPeriodIndex];
+            if (!targetCell) return [];
+            
+            const targetParsed = parseCellData(targetCell);
+            const targetClass = targetParsed.location;
+            
+            // 선택과목은 교체 불가
+            if (targetParsed.hasAlphabet || !targetClass) return [];
+            
+            const days = ['월', '화', '수', '목', '금'];
+            const results = [];
+            const seen = new Set(); // 중복 방지
+            
+            // targetSlot에 빈 시간인 교사들 (= 나의 수업을 대신할 수 있는 후보)
+            const firstHopCandidates = [];
+            allSchedules.forEach(t => {
+                if (t.name === targetTeacherName) return;
+                if (isFree(t, targetDay, targetPeriodIndex)) {
+                    firstHopCandidates.push(t);
+                }
+            });
+            
+            // 특정 교사의 특정 학반(targetClass) 수업 슬롯을 모두 찾기
+            function findClassSlots(teacher, classLoc, excludeSlots) {
+                const slots = [];
+                days.forEach(d => {
+                    for (let p = 0; p < 7; p++) {
+                        // 제외 슬롯 체크
+                        if (excludeSlots.some(es => es.day === d && es.period === p)) continue;
+                        
+                        const cell = teacher.schedule[d][p];
+                        if (!cell || isFree(teacher, d, p)) continue;
+                        const parsed = parseCellData(cell);
+                        if (parsed.location === classLoc && !parsed.hasAlphabet) {
+                            slots.push({ day: d, period: p, cell: cell });
+                        }
+                    }
+                });
+                return slots;
+            }
+            
+            // ---- 3인 순환 탐색 ----
+            // A(target) → B → C → A
+            // B는 targetSlot에 비어있고, B의 targetClass 수업(slotB)이 존재
+            // C는 slotB에 비어있고, C의 targetClass 수업(slotC)이 존재
+            // A는 slotC에 비어있어야 함
+            
+            for (const B of firstHopCandidates) {
+                // B의 동일 학반 수업 찾기
+                const bSlots = findClassSlots(B, targetClass, [{ day: targetDay, period: targetPeriodIndex }]);
+                
+                for (const slotB of bSlots) {
+                    // slotB에 비어있는 교사 C 찾기 (A, B 제외)
+                    allSchedules.forEach(C => {
+                        if (C.name === targetTeacherName || C.name === B.name) return;
+                        if (!isFree(C, slotB.day, slotB.period)) return;
+                        
+                        if (maxDepth >= 3) {
+                            // C의 동일 학반 수업 찾기
+                            const cSlots = findClassSlots(C, targetClass, [
+                                { day: targetDay, period: targetPeriodIndex },
+                                { day: slotB.day, period: slotB.period }
+                            ]);
+                            
+                            for (const slotC of cSlots) {
+                                // A가 slotC에 비어있는지?
+                                if (isFree(targetTeacher, slotC.day, slotC.period)) {
+                                    // 3인 순환 발견!
+                                    const key = [targetTeacherName, B.name, C.name].sort().join('|') + '|' + 
+                                                [targetDay+targetPeriodIndex, slotB.day+slotB.period, slotC.day+slotC.period].sort().join('|');
+                                    if (!seen.has(key)) {
+                                        seen.add(key);
+                                        results.push({
+                                            type: 3,
+                                            chain: [
+                                                { teacher: targetTeacherName, gives: { day: targetDay, period: targetPeriodIndex, cell: targetCell }, receives: { day: slotC.day, period: slotC.period, cell: slotC.cell, from: C.name } },
+                                                { teacher: B.name, gives: { day: slotB.day, period: slotB.period, cell: slotB.cell }, receives: { day: targetDay, period: targetPeriodIndex, cell: targetCell, from: targetTeacherName } },
+                                                { teacher: C.name, gives: { day: slotC.day, period: slotC.period, cell: slotC.cell }, receives: { day: slotB.day, period: slotB.period, cell: slotB.cell, from: B.name } }
+                                            ]
+                                        });
+                                    }
+                                }
+                                
+                                // ---- 4인 순환 탐색 ----
+                                // A → B → C → D → A
+                                if (maxDepth >= 4) {
+                                    // C는 slotB에 비어있음, C의 동일학반 수업(slotC)이 존재
+                                    // D는 slotC에 비어있고, D의 동일학반 수업(slotD)이 존재
+                                    // A는 slotD에 비어있어야 함
+                                    
+                                    // slotC에 비어있는 교사 D 찾기 (A, B, C 제외)
+                                    allSchedules.forEach(D => {
+                                        if (D.name === targetTeacherName || D.name === B.name || D.name === C.name) return;
+                                        if (!isFree(D, slotC.day, slotC.period)) return;
+                                        
+                                        const dSlots = findClassSlots(D, targetClass, [
+                                            { day: targetDay, period: targetPeriodIndex },
+                                            { day: slotB.day, period: slotB.period },
+                                            { day: slotC.day, period: slotC.period }
+                                        ]);
+                                        
+                                        for (const slotD of dSlots) {
+                                            if (isFree(targetTeacher, slotD.day, slotD.period)) {
+                                                const key = [targetTeacherName, B.name, C.name, D.name].sort().join('|') + '|' +
+                                                            [targetDay+targetPeriodIndex, slotB.day+slotB.period, slotC.day+slotC.period, slotD.day+slotD.period].sort().join('|');
+                                                if (!seen.has(key)) {
+                                                    seen.add(key);
+                                                    results.push({
+                                                        type: 4,
+                                                        chain: [
+                                                            { teacher: targetTeacherName, gives: { day: targetDay, period: targetPeriodIndex, cell: targetCell }, receives: { day: slotD.day, period: slotD.period, cell: slotD.cell, from: D.name } },
+                                                            { teacher: B.name, gives: { day: slotB.day, period: slotB.period, cell: slotB.cell }, receives: { day: targetDay, period: targetPeriodIndex, cell: targetCell, from: targetTeacherName } },
+                                                            { teacher: C.name, gives: { day: slotC.day, period: slotC.period, cell: slotC.cell }, receives: { day: slotB.day, period: slotB.period, cell: slotB.cell, from: B.name } },
+                                                            { teacher: D.name, gives: { day: slotD.day, period: slotD.period, cell: slotD.cell }, receives: { day: slotC.day, period: slotC.period, cell: slotC.cell, from: C.name } }
+                                                        ]
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            return results;
+        }
+
+        // ==========================================
+        // 모달 열기 (탭 구조로 리팩토링)
+        // ==========================================
+        function openSwapModal(targetTeacherName, targetDay, targetPeriodIndex) {
+            const modal = document.getElementById('swap-modal');
+            const bodyContent = document.getElementById('modal-body-content');
+            const targetPeriodNum = targetPeriodIndex + 1;
+            
+            const targetTeacherData = allSchedules.find(t => t.name === targetTeacherName);
+            if (!targetTeacherData) return;
+            
+            let rawCellData = targetTeacherData.schedule[targetDay][targetPeriodIndex] || "";
+            document.getElementById('modal-title').innerHTML = `🔄 <b>${targetDay}요일 ${targetPeriodNum}교시</b> (${rawCellData.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ')}) 교체/보강 탐색`;
+            
+            const targetParsed = parseCellData(rawCellData);
+            const targetClass = targetParsed.location;
+            const hasAlphabet = targetParsed.hasAlphabet;
+            
+            // ---- 기존 2인 교체 + 대체 결과 계산 ----
+            let swapResults = [];
+            let subResults = [];
+            const days = ['월', '화', '수', '목', '금'];
+
+            allSchedules.forEach(otherTeacher => {
+                if (otherTeacher.name === targetTeacherName) return;
+
+                if (isFree(otherTeacher, targetDay, targetPeriodIndex)) {
+                    subResults.push(otherTeacher.name);
+                }
+
+                if (!hasAlphabet && targetClass) {
+                    days.forEach(otherDay => {
+                        for (let p = 0; p < 7; p++) {
+                            if (otherDay === targetDay && p === targetPeriodIndex) continue;
+                            let otherCell = otherTeacher.schedule[otherDay][p];
+                            if (!otherCell || isFree(otherTeacher, otherDay, p)) continue;
+                            const otherParsed = parseCellData(otherCell);
+                            const otherClass = otherParsed.location;
+                            const otherHasAlphabet = otherParsed.hasAlphabet;
+                            if (otherClass === targetClass && !otherHasAlphabet) {
+                                if (isFree(otherTeacher, targetDay, targetPeriodIndex) && isFree(targetTeacherData, otherDay, p)) {
+                                    swapResults.push({
+                                        name: otherTeacher.name,
+                                        day: otherDay,
+                                        period: p + 1,
+                                        subject: otherCell.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ')
+                                    });
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            // ---- HTML 빌드: 탭 구조 ----
+            let html = '';
+            
+            // 탭 헤더
+            html += `<div class="modal-tabs">
+                <button class="modal-tab active" onclick="switchTab(event, 'tab-basic')">📋 기본 (2인 교체/대체)</button>
+                <button class="modal-tab" onclick="switchTab(event, 'tab-multi')">🔄 다자간 순환 교체 (3~4인)</button>
+            </div>`;
+            
+            // ==================== 탭 1: 기본 ====================
+            html += `<div id="tab-basic" class="tab-content active">`;
+            
+            if (hasAlphabet) {
+                html += `<div class="error-notice">
+                    <b>⚠️ 교체 불가 안내</b><br>
+                    선택하신 수업은 알파벳(A, B 등)이 포함된 선택과목/분반 수업입니다.<br>해당 수업은 시스템상 1:1 맞교환(교체)이 불가능하므로, 아래의 <b>대체/보강 가능 교사</b>에게 연락을 부탁드립니다.
+                </div>`;
+            } else {
+                html += `<div class="result-section">
+                    <h4>🔄 1:1 맞교환 (교체) 가능한 선생님</h4>
+                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">나의 빈 시간에 동일한 학반(${targetClass}반) 수업이 있고, 해당 선생님도 나의 수업 시간에 비어있는 경우입니다.</p>`;
+                
+                if (swapResults.length > 0) {
+                    html += `<ul class="result-list">`;
+                    swapResults.forEach(res => {
+                        const ext = extNumbers[res.name] ? `📞 ${extNumbers[res.name]}` : '';
+                        html += `<li class="result-item">
+                            <strong>${res.name}</strong> ${ext}
+                            <span>${res.day}요일 ${res.period}교시 (${res.subject})</span>
+                        </li>`;
+                    });
+                    html += `</ul></div>`;
+                } else {
+                    html += `<div class="no-result">조건에 맞는 1:1 교체 가능 교사가 없습니다. <b>다자간 순환 교체</b> 탭을 확인해보세요!</div></div>`;
+                }
+            }
+
+            html += `<div class="result-section">
+                <h4>✅ 시간표가 비어있는 (대체/보강) 선생님</h4>
+                <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">${targetDay}요일 ${targetPeriodNum}교시에 수업이 없는(공강) 선생님 목록입니다.</p>`;
+            
+            if (subResults.length > 0) {
+                html += `<ul class="result-list">`;
+                subResults.forEach(name => {
+                    const ext = extNumbers[name] ? `📞 ${extNumbers[name]}` : '';
+                    html += `<li class="result-item" style="padding: 8px 12px;"><strong>${name}</strong> ${ext}</li>`;
+                });
+                html += `</ul></div>`;
+            } else {
+                html += `<div class="no-result">해당 시간에 공강인 교사가 없습니다.</div></div>`;
+            }
+            html += `</div>`; // tab-basic 닫기
+            
+            // ==================== 탭 2: 다자간 순환 교체 ====================
+            html += `<div id="tab-multi" class="tab-content">`;
+            
+            if (hasAlphabet || !targetClass) {
+                html += `<div class="error-notice">
+                    <b>⚠️ 다자간 교체 불가</b><br>
+                    선택과목/분반 수업이거나 수업장소 정보가 없는 경우 다자간 순환 교체 탐색이 불가능합니다.
+                </div>`;
+            } else {
+                html += `<div class="info-notice">
+                    <b>💡 다자간 순환 교체란?</b><br>
+                    1:1 맞교환이 불가능할 때, 3~4명의 교사가 서로의 동일 학반(${targetClass}반) 수업을 순환하여 교체하는 방법입니다. 
+                    각 교사는 다른 교사의 수업 시간에 비어있어야 하며, 모두 같은 학반 수업이어야 합니다.
+                </div>`;
+                html += `<div id="multi-swap-results"><div class="loading-spinner"><div class="spinner"></div>순환 교체 경로를 탐색 중입니다...</div></div>`;
+            }
+            
+            html += `</div>`; // tab-multi 닫기
+
+            bodyContent.innerHTML = html;
+            modal.style.display = 'flex';
+            
+            // 다자간 탐색은 비동기로 실행 (UI 블로킹 방지)
+            if (!hasAlphabet && targetClass) {
+                setTimeout(() => {
+                    const multiResults = findMultiSwapCycles(targetTeacherName, targetDay, targetPeriodIndex, 4);
+                    renderMultiSwapResults(multiResults, targetClass);
+                }, 50);
+            }
+        }
+
+        // 현재 열린 모달의 다자간 교체 결과를 전역에 보관 (필터링에 재사용)
+        let _multiSwapAllResults = [];
+        let _multiSwapTargetClass = '';
+
+        function renderMultiSwapResults(results, targetClass) {
+            const container = document.getElementById('multi-swap-results');
+            if (!container) return;
+            
+            _multiSwapAllResults = results;
+            _multiSwapTargetClass = targetClass;
+            
+            if (results.length === 0) {
+                container.innerHTML = `<div class="no-result">동일 학반(${targetClass}반) 조건을 만족하는 다자간 순환 교체 경로가 없습니다.</div>`;
+                return;
+            }
+
+            // 본인(chain[0])이 교체 후 대신 들어가게 될 요일·교시(receives) 목록 수집
+            // → 사용자가 "이 시간에 들어가는 경우만 보고 싶다"고 선택하는 기준
+            const dayOrder = ['월', '화', '수', '목', '금'];
+            const receiveSlotSet = new Map();
+            results.forEach(cycle => {
+                const rec = cycle.chain[0].receives; // 본인이 받게 되는 슬롯
+                const key = rec.day + '|' + rec.period;
+                if (!receiveSlotSet.has(key)) {
+                    receiveSlotSet.set(key, { day: rec.day, period: rec.period });
+                }
+            });
+            const sortedReceiveSlots = Array.from(receiveSlotSet.values()).sort((a, b) => {
+                const di = dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
+                return di !== 0 ? di : a.period - b.period;
+            });
+
+            // 필터 UI — "교체 후 내가 들어갈 요일·교시" 선택
+            let filterHtml = `<div class="multi-filter-box" id="multi-filter-box">
+                <div class="multi-filter-label">📌 교체 후 내가 들어갈 요일·교시 선택
+                    <span style="font-size:12px; color:var(--subtle-text); font-weight:400; margin-left:6px;">선택하면 해당 시간에 내 수업이 배치되는 경우만 모두 표시됩니다</span>
+                </div>
+                <div class="multi-filter-slots">`;
+            sortedReceiveSlots.forEach(slot => {
+                const key = slot.day + '|' + slot.period;
+                filterHtml += `<button class="multi-filter-btn" data-slot="${key}" onclick="applyMultiFilter(this)">${slot.day} ${slot.period + 1}교시</button>`;
+            });
+            filterHtml += `</div>
+                <button class="multi-filter-clear" onclick="clearMultiFilter()" style="display:none;" id="multi-filter-clear">✕ 선택 해제 (전체 보기)</button>
+            </div>`;
+
+            container.innerHTML = filterHtml + `<div id="multi-filtered-results"></div>`;
+            renderFilteredResults(null); // 초기: 필터 없이 상위 N건 표시
+        }
+
+        function renderFilteredResults(filterSlotKey) {
+            const container = document.getElementById('multi-filtered-results');
+            if (!container) return;
+            const results = _multiSwapAllResults;
+            const targetClass = _multiSwapTargetClass;
+
+            let threeWay = results.filter(r => r.type === 3);
+            let fourWay = results.filter(r => r.type === 4);
+            const isFiltered = filterSlotKey !== null;
+
+            if (isFiltered) {
+                // chain[0].receives(본인이 받을 슬롯)가 선택한 요일·교시인 경우만 필터링, 전체 출력
+                const [fDay, fPeriod] = filterSlotKey.split('|');
+                const fp = parseInt(fPeriod);
+                threeWay = threeWay.filter(cycle => {
+                    const rec = cycle.chain[0].receives;
+                    return rec.day === fDay && rec.period === fp;
+                });
+                fourWay = fourWay.filter(cycle => {
+                    const rec = cycle.chain[0].receives;
+                    return rec.day === fDay && rec.period === fp;
+                });
+            }
+
+            let html = '';
+
+            if (threeWay.length > 0) {
+                const total3 = results.filter(r => r.type === 3).length;
+                const h3title = isFiltered ? '(' + threeWay.length + '건 해당)' : '(' + total3 + '건 발견)';
+                const h3desc = isFiltered
+                    ? '선택한 시간에 내 수업이 배치되는 3인 교체 <b>' + threeWay.length + '건</b>을 모두 표시합니다.'
+                    : '3명의 교사가 서로의 ' + targetClass + '반 수업을 순환하여 교체합니다.';
+                html += `<div class="result-section">
+                    <h4>🔄 3인 순환 교체 ${h3title}</h4>
+                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">${h3desc}</p>`;
+                const list3 = isFiltered ? threeWay : threeWay.slice(0, 20);
+                list3.forEach((cycle, idx) => { html += renderCycleCard(cycle, idx + 1); });
+                if (!isFiltered && threeWay.length > 20) {
+                    html += `<div class="no-result">외 ${threeWay.length - 20}건이 더 있습니다. 위에서 요일·교시를 선택하면 해당 시간 기준의 결과를 전부 확인할 수 있습니다.</div>`;
+                }
+                html += `</div>`;
+            }
+
+            if (fourWay.length > 0) {
+                const total4 = results.filter(r => r.type === 4).length;
+                const h4title = isFiltered ? '(' + fourWay.length + '건 해당)' : '(' + total4 + '건 발견)';
+                const h4desc = isFiltered
+                    ? '선택한 시간에 내 수업이 배치되는 4인 교체 <b>' + fourWay.length + '건</b>을 모두 표시합니다.'
+                    : '4명의 교사가 서로의 ' + targetClass + '반 수업을 순환하여 교체합니다.';
+                html += `<div class="result-section">
+                    <h4>🔄 4인 순환 교체 ${h4title}</h4>
+                    <p style="font-size:13px; color:var(--subtle-text); margin-top:-10px; margin-bottom:15px;">${h4desc}</p>`;
+                const list4 = isFiltered ? fourWay : fourWay.slice(0, 15);
+                list4.forEach((cycle, idx) => { html += renderCycleCard(cycle, idx + 1); });
+                if (!isFiltered && fourWay.length > 15) {
+                    html += `<div class="no-result">외 ${fourWay.length - 15}건이 더 있습니다. 위에서 요일·교시를 선택하면 해당 시간 기준의 결과를 전부 확인할 수 있습니다.</div>`;
+                }
+                html += `</div>`;
+            }
+
+            if (threeWay.length === 0 && fourWay.length === 0) {
+                const msg = isFiltered
+                    ? '선택하신 요일·교시에 내 수업이 배치되는 순환 교체 경로가 없습니다.'
+                    : '동일 학반 조건을 만족하는 다자간 순환 교체 경로가 없습니다.';
+                html = `<div class="no-result">${msg}</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function applyMultiFilter(btn) {
+            const isActive = btn.classList.contains('active');
+            document.querySelectorAll('.multi-filter-btn').forEach(b => b.classList.remove('active'));
+            const clearBtn = document.getElementById('multi-filter-clear');
+            if (isActive) {
+                clearBtn.style.display = 'none';
+                renderFilteredResults(null);
+            } else {
+                btn.classList.add('active');
+                clearBtn.style.display = 'inline-block';
+                renderFilteredResults(btn.getAttribute('data-slot'));
+            }
+        }
+
+        function clearMultiFilter() {
+            document.querySelectorAll('.multi-filter-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('multi-filter-clear').style.display = 'none';
+            renderFilteredResults(null);
+        }
+        
+        function renderCycleCard(cycle, number) {
+            const chain = cycle.chain;
+            let html = `<div class="cycle-card">
+                <div class="cycle-card-header">
+                    <span class="cycle-badge">${number}</span>
+                    <span class="cycle-card-title">${cycle.type}인 순환 교체 — ${chain.map(c => c.teacher).join(' → ')} → ${chain[0].teacher}</span>
+                </div>
+                <div class="cycle-flow">`;
+            
+            chain.forEach((step, i) => {
+                const len = chain.length;
+                const nextTeacher = chain[(i + 1) % len].teacher;
+                const ext = extNumbers[step.teacher] ? ` (📞${extNumbers[step.teacher]})` : '';
+                const cellClean = step.gives.cell.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ');
+                html += `<div class="cycle-step">
+                    <div class="step-teacher">${step.teacher}${ext}</div>
+                    <div class="step-detail">${step.gives.day} ${step.gives.period + 1}교시 수업</div>
+                    <div class="step-detail" style="font-size:11px; color:var(--subtle-text);">${cellClean}</div>
+                    <div class="step-next">→ ${nextTeacher} 담당</div>
+                </div>`;
+                html += `<span class="cycle-arrow">→</span>`;
+            });
+            
+            // 마지막 화살표 뒤에 처음으로 돌아오는 표시
+            html += `<div class="cycle-step" style="border: 2px dashed var(--primary-color); background: var(--empty-bg); display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div class="step-teacher">${chain[0].teacher}</div>
+                <div class="step-detail" style="color:var(--primary-color); font-weight:600;">↩ 순환 완료</div>
+            </div>`;
+            
+            html += `</div>`; // cycle-flow
+            
+            // 요약
+            // chain[i].gives  = 내가 원래 맡고 있던 수업 슬롯 (내가 빠지는 곳)
+            // chain[i].receives = 내가 새로 들어가는 슬롯 (내가 가는 곳)
+            // 내 gives 슬롯에 들어오는 사람 = 다음 step의 teacher (chain[(i+1)%len])
+            html += `<div class="cycle-summary"><b>📋 교체 방법:</b><br>`;
+            chain.forEach((step, i) => {
+                const len = chain.length;
+                const nextTeacher = chain[(i + 1) % len].teacher; // 내 슬롯에 들어오는 사람
+                const givesClean = step.gives.cell.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ');
+                const receivesClean = step.receives.cell.replace(/_x000D_/g, '').replace(/\r?\n/g, ' ');
+                html += `• <b>${step.teacher}</b>: <b>${step.gives.day} ${step.gives.period + 1}교시</b> (${givesClean})에 <b>${nextTeacher}</b> 선생님이 들어오고, 본인은 <b>${step.receives.day} ${step.receives.period + 1}교시</b> (${receivesClean})로 이동<br>`;
+            });
+            html += `</div>`;
+            
+            html += `</div>`; // cycle-card
+            return html;
+        }
+
+        function switchTab(event, tabId) {
+            document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function closeSwapModal() { document.getElementById('swap-modal').style.display = 'none'; }
+
+        function processSubject(subject) {
+            if (!subject) return { html: '', style: '' };
+            
+            const parsed = parseCellData(subject);
+            let location = parsed.location;
+            let subjectName = parsed.subjectName;
+            let cellBorderStyle = '';
+            let processedSubjectName = subjectName;
+            let colorApplied = false;
+
+            function applyAlphabetTag(letter, restName) {
+                const index = letter.toUpperCase().charCodeAt(0) - 65;
+                let color;
+                if (index >= 0 && index <= 25) {
+                    const letterHue = (index * 137.5) % 360; 
+                    const lightness = 45 + (index % 3) * 10;
+                    color = `hsl(${letterHue}, 80%, ${lightness}%)`;
+                } else {
+                    color = stringToHslColor(letter, 60, 55);
+                }
+                cellBorderStyle = `border-left: 5px solid ${color};`;
+                const cleanedRestName = restName.replace(/^[\s\n_]+/, '');
+                return `<span class="subject-tag" style="background-color: ${color};">${letter}</span>` + cleanedRestName;
+            }
+
+            if (isColoringEnabled) { 
+                // A_수업 패턴
+                const spMatch = subjectName.match(/^([A-Z])[\s\n]*_[\s\n]*([\s\S]+)$/);
+                if (spMatch) {
+                    processedSubjectName = applyAlphabetTag(spMatch[1], spMatch[2]);
+                    colorApplied = true;
+                }
+                // A1_수업, B2_수업 등 알파벳+숫자+언더바 패턴
+                if (!colorApplied) {
+                    const spNumMatch = subjectName.match(/^([A-Z][0-9]+)[\s\n]*_[\s\n]*([\s\S]+)$/);
+                    if (spNumMatch) {
+                        processedSubjectName = applyAlphabetTag(spNumMatch[1], spNumMatch[2]);
+                        colorApplied = true;
+                    }
+                }
+            }
+
+            if (isFormatBColoringEnabled && !colorApplied) {
+                // A수업 패턴
+                const formatBMatch = subjectName.match(/^([A-Z])[\s\n]*([가-힣a-zA-Z][\s\S]*)$/);
+                if (formatBMatch) {
+                    processedSubjectName = applyAlphabetTag(formatBMatch[1], formatBMatch[2]);
+                    colorApplied = true;
+                }
+                // A1수업, B2수업 등 알파벳+숫자+한글/영문 패턴
+                if (!colorApplied) {
+                    const formatBNumMatch = subjectName.match(/^([A-Z][0-9]+)[\s\n]*([가-힣a-zA-Z][\s\S]*)$/);
+                    if (formatBNumMatch) {
+                        processedSubjectName = applyAlphabetTag(formatBNumMatch[1], formatBNumMatch[2]);
+                        colorApplied = true;
+                    }
+                }
+            }
+
+            let locationHtml = '';
+            if (location) {
+                if (isLocationChipEnabled) {
+                    let locationColor;
+                    const classMatch = location.match(/^([1-3])(\d{2})$/);
+                    if (classMatch) {
+                        const grade = parseInt(classMatch[1]);
+                        const classNum = parseInt(classMatch[2]);
+                        let baseHue;
+                        if (grade === 1) baseHue = 210;
+                        else if (grade === 2) baseHue = 130;
+                        else if (grade === 3) baseHue = 25;
+                        const hue = baseHue + (classNum * 4);
+                        locationColor = `hsl(${hue}, 70%, 55%)`; 
+                    } else {
+                        locationColor = stringToHslColor(location, 65, 50);
+                    }
+                    locationHtml = `<span class="location-chip" style="background-color: ${locationColor};">${location}</span>`;
+                } else { 
+                    locationHtml = location; 
+                }
+            }
+
+            let finalHtml = processedSubjectName;
+            if (locationHtml) {
+                finalHtml = isLineBreakEnabled ? `${locationHtml}<br>${processedSubjectName}` : `${locationHtml} ${processedSubjectName}`;
+            }
+            
+            finalHtml = finalHtml.replace(/\r?\n/g, '<br>');
+            return { html: finalHtml, style: cellBorderStyle };
+        }
+
+        function init() {
+            updateSearchStats(); updateFavoriteChips();
+            teacherSearchInput.addEventListener('input', handleSearch);
+            teacherSearchInput.addEventListener('keydown', handleKeyNavigation);
+            
+            document.addEventListener('click', e => { 
+                if (!e.target.closest('.search-container')) hideDropdown(); 
+                
+                const cell = e.target.closest('.clickable-cell');
+                if (cell) {
+                    const tName = cell.getAttribute('data-teacher');
+                    const tDay = cell.getAttribute('data-day');
+                    const tPeriod = parseInt(cell.getAttribute('data-period'), 10);
+                    openSwapModal(tName, tDay, tPeriod);
+                }
+            });
+        }
+
+        function handleSearch(e) {
+            const query = e.target.value.trim().toLowerCase();
+            if (query === '') {
+                filteredTeachers = [...allSchedules]; hideDropdown();
+                scheduleContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👨‍🏫</div><h3 style="color: var(--text-color);">교사를 검색해보세요</h3></div>';
+            } else {
+                filteredTeachers = allSchedules.filter(t => t.name.toLowerCase().includes(query));
+                updateAutocomplete();
+            }
+            updateSearchStats();
+        }
+
+        function handleKeyNavigation(e) {
+            const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+            if (!items.length) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); selectedIndex = Math.min(selectedIndex + 1, items.length - 1); updateSelection(items); }
+            if (e.key === 'ArrowUp') { e.preventDefault(); selectedIndex = Math.max(selectedIndex - 1, 0); updateSelection(items); }
+            if (e.key === 'Enter') { e.preventDefault(); if(selectedIndex >= 0) selectTeacher(filteredTeachers[selectedIndex].name); else if(filteredTeachers.length > 0) selectTeacher(filteredTeachers[0].name); }
+        }
+
+        function updateSelection(items) { items.forEach((item, i) => item.classList.toggle('selected', i === selectedIndex)); }
+        function updateAutocomplete() {
+            if (filteredTeachers.length === 0) return hideDropdown();
+            autocompleteDropdown.innerHTML = filteredTeachers.map(t => `<div class="autocomplete-item" onclick="selectTeacher('${t.name}')">${favorites.includes(t.name) ? '⭐ ' : ''}${t.name}</div>`).join('');
+            autocompleteDropdown.style.display = 'block'; selectedIndex = -1;
+        }
+        function hideDropdown() { autocompleteDropdown.style.display = 'none'; selectedIndex = -1; }
+        function selectTeacher(teacherName) { teacherSearchInput.value = teacherName; hideDropdown(); displaySchedule(teacherName); }
+
+        function displaySchedule(teacherName) {
+            const teacher = allSchedules.find(t => t.name === teacherName);
+            if (!teacher) return;
+            const isFav = favorites.includes(teacherName);
+            
+            const extNum = extNumbers[teacherName] ? `<span class="ext-badge">📞 ${extNumbers[teacherName]}</span>` : '';
+            const todayIdx = new Date().getDay() - 1; 
+
+            let tableHTML = `<div class="schedule-header">
+                <div class="teacher-info"><h2>${teacher.name} 선생님 ${extNum}</h2></div>
+                <div class="teacher-actions">
+                <button class="action-btn ${isFav ? 'favorited' : ''}" onclick="toggleFavorite('${teacherName}')"><span>${isFav ? '⭐ 즐겨찾기됨' : '☆ 즐겨찾기'}</span></button>
+                <button class="action-btn" onclick="window.print()"><span>🖨️ 인쇄</span></button></div></div>
+                <div class="table-container"><table><thead><tr><th>교시</th>`;
+
+            ['월', '화', '수', '목', '금'].forEach((day, index) => {
+                const isToday = index === todayIdx;
+                tableHTML += `<th class="${isToday ? 'today-header' : ''}">${day}${isToday ? ' <span class="today-badge">오늘</span>' : ''}</th>`;
+            });
+            tableHTML += `</tr></thead><tbody>`;
+
+            for (let i = 0; i < 7; i++) {
+                const periodNum = i + 1;
+                const timeStr = bellSchedule[periodNum] ? `<br><span style="font-size:13.5px; color:var(--subtle-text); font-weight:500; font-family:'Pretendard', sans-serif;">(${bellSchedule[periodNum]})</span>` : '';
+                
+                tableHTML += `<tr><td>${periodNum}교시${timeStr}</td>`;
+                ['월', '화', '수', '목', '금'].forEach((day, index) => {
+                    let cellData = teacher.schedule[day] && teacher.schedule[day][i] ? teacher.schedule[day][i].trim() : null;
+                    const isToday = index === todayIdx;
+                    const cellClass = isToday ? 'today-cell' : ''; 
+                    
+                    if (cellData && cellData !== '') {
+                        const sub = processSubject(cellData);
+                        tableHTML += `<td class="${cellClass} clickable-cell" style="${sub.style}" data-teacher="${teacherName}" data-day="${day}" data-period="${i}">${sub.html}</td>`;
+                    } else {
+                        tableHTML += `<td class="empty-period ${cellClass}"></td>`; 
+                    }
+                });
+                tableHTML += '</tr>';
+            }
+            scheduleContainer.innerHTML = tableHTML + '</tbody></table></div>';
+        }
+
+        function toggleFavorite(name) {
+            const idx = favorites.indexOf(name);
+            if (idx > -1) favorites.splice(idx, 1); else favorites.push(name);
+            localStorage.setItem('favTeachers', JSON.stringify(favorites));
+            updateFavoriteChips(); displaySchedule(name);
+        }
+
+        function updateFavoriteChips() {
+            favoriteChips.innerHTML = favorites.length === 0 ? '<span style="color:var(--subtle-text);font-size:13px;">즐겨찾기 없음</span>' : favorites.map(name => `<button class="favorite-chip" onclick="selectTeacher('${name}')">${name}</button>`).join('');
+        }
+
+        function updateSearchStats() { searchStats.textContent = teacherSearchInput.value.trim() === '' ? `총 ${allSchedules.length}명` : `${filteredTeachers.length}명 검색됨`; }
+
+        init();
+    </script>
+</body>
+</html>
